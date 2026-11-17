@@ -300,9 +300,22 @@ const CONFIG = {
 /* Put each church's own website in `website` (for Tubod, the address of the Tubod site) and its Facebook page in `facebook`. */
 const CHURCHES = [
   { name: 'Tubod SDA Church', municipality: 'Isabel', barangay: 'Tubod',
-    sabbath: '', midweek: 'Wednesday and Friday, 7:00 PM', leader: '', phone: '', facebook: '', website: '', notes: '' }
+    sabbath: '', midweek: 'Wednesday and Friday, 7:00 PM', leader: '', phone: '', facebook: '', website: 'https://mvcashbel-art.github.io/Tubod-SDA/', notes: '' },
+  { name: 'Apale SDA Church', municipality: 'Isabel', barangay: 'Apale', 
+    sabbath: '', midweek: '', leader: '', phone: '', facebook: '', website: 'https://mvcashbel-art.github.io/isabel-merida-district/churches/apale/', notes: '' },
+  { name: 'Isabel SDA Church', municipality: 'Isabel', 
+    sabbath: '', midweek: '', leader: '', phone: '', facebook: '', website: 'https://mvcashbel-art.github.io/isabel-merida-district/churches/isabel/', notes: '' },
+  { name: 'Simangan SDA Church', municipality: 'Isabel', barangay: 'Simangan', 
+    sabbath: '', midweek: '', leader: '', phone: '', facebook: '', website: 'https://mvcashbel-art.github.io/isabel-merida-district/churches/simangan/', notes: '' },
+  { name: 'Puting Bato SDA Church', municipality: 'Isabel', barangay: 'Puting Bato', 
+    sabbath: '', midweek: '', leader: '', phone: '', facebook: '', website: 'https://mvcashbel-art.github.io/isabel-merida-district/churches/puting-bato/', notes: '' },
+  { name: 'Bantigue SDA Church', municipality: 'Isabel', barangay: 'Bantigue', 
+    sabbath: '', midweek: '', leader: '', phone: '', facebook: '', website: 'https://mvcashbel-art.github.io/isabel-merida-district/churches/bantigue/', notes: '' },
+  { name: 'San Francisco SDA Church', municipality: 'Isabel', barangay: 'San Francisco', 
+    sabbath: '', midweek: '', leader: '', phone: '', facebook: '', website: 'https://mvcashbel-art.github.io/isabel-merida-district/churches/san-francisco/', notes: '' }
 ];
-for (let i = 2; i <= 12; i++) CHURCHES.push({ name: 'Isabel Church ' + i, municipality: 'Isabel', placeholder: true });
+/* Churches still to be named: the other five in Isabel and the three in Merida. */
+for (let i = 8; i <= 12; i++) CHURCHES.push({ name: 'Isabel Church ' + i, municipality: 'Isabel', placeholder: true });
 for (let i = 1; i <= 3; i++) CHURCHES.push({ name: 'Merida Church ' + i, municipality: 'Merida', placeholder: true });
 
 const ANNOUNCEMENTS = [
