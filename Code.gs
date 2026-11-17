@@ -435,3 +435,18 @@ function resetPassword_(u, b) {
   log_(u.username, 'password-reset', '', target.username);
   return { ok: true, tempPassword: temp };
 }
+
+/** Run from the editor if the admin password is lost. A new temporary password appears in the execution log. */
+function resetAdmin() {
+  var u = findUser_('admin');
+  if (!u) { setup(); return; }
+  var temp = tempPassword_();
+  u.salt = Utilities.getUuid();
+  u.hash = hash_(u.salt, temp);
+  u.mustChange = 'yes';
+  u.active = 'yes';
+  writeObj_('Users', USER_COLS, u._row, u);
+  CacheService.getScriptCache().remove('lf_admin');
+  log_('system', 'password-reset', '', 'admin');
+  Logger.log('New temporary password for admin: ' + temp);
+}
