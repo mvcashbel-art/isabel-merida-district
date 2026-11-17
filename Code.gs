@@ -255,7 +255,7 @@ function nextSeq_(code, members) {
   return max + 1;
 }
 function key_(s) {
-  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 /* ---------------------------------------------------------------- members */
