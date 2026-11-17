@@ -1,5 +1,5 @@
 /**
- * Isabel Church 2: backend for the church website.
+ * Apale SDA Church: backend for the church website.
  * Runs inside a Google Sheet (Extensions > Apps Script). Members, posts, comments,
  * files and settings live in the sheet tabs; photos and library files live in Google Drive.
  *
@@ -49,7 +49,7 @@ function osPush_(title, body) {
       method: 'post', contentType: 'application/json',
       headers: { Authorization: 'Basic ' + key },
       payload: JSON.stringify({ app_id: appId, included_segments: ['Subscribed Users'],
-        headings: { en: String(title || 'Isabel Church 2').slice(0, 80) },
+        headings: { en: String(title || 'Apale SDA Church').slice(0, 80) },
         contents: { en: String(body || '').replace(/\s+/g, ' ').trim().slice(0, 200) || 'New announcement' } }),
       muteHttpExceptions: true
     });
@@ -66,7 +66,7 @@ function osPushTo_(ids, title, body) {
       method: 'post', contentType: 'application/json',
       headers: { Authorization: 'Basic ' + key },
       payload: JSON.stringify({ app_id: appId, include_external_user_ids: list.slice(0, 2000), channel_for_external_user_ids: 'push',
-        headings: { en: String(title || 'Isabel Church 2').slice(0, 80) },
+        headings: { en: String(title || 'Apale SDA Church').slice(0, 80) },
         contents: { en: String(body || '').replace(/\s+/g, ' ').trim().slice(0, 200) || 'New message' } }),
       muteHttpExceptions: true
     });
@@ -98,8 +98,8 @@ function setup() {
   ensureHeaders_();
   folder_();
   const defaults = {
-    churchName: 'Isabel Church 2', tagline: 'Isabel, Leyte',
-    schedule: '', verse: '', bgId: '', joinCode: 'ISABEL2SDA',
+    churchName: 'Apale SDA Church', tagline: 'Apale, Isabel, Leyte',
+    schedule: '', verse: '', bgId: '', joinCode: 'APALESDA',
     services: JSON.stringify([
       { id: 'wed', name: 'Wednesday worship', day: 3, time: '19:00' },
       { id: 'fri', name: 'Friday worship', day: 5, time: '19:00' }
@@ -112,7 +112,7 @@ function setup() {
   if (readAll_('Posts').length === 0) {
     append_('Posts', {
       id: id_('p'), authorId: 'system', cat: 'announcement', pinned: '1', photos: '', createdAt: String(Date.now()),
-      text: 'Happy Sabbath! Welcome to the Isabel Church 2 family page. Share encouragement, prayer requests and testimonies here, keep sermons and Sabbath School lessons in the Library, and add your photo to your profile so everyone knows who you are.'
+      text: 'Happy Sabbath! Welcome to the Apale SDA Church family page. Share encouragement, prayer requests and testimonies here, keep sermons and Sabbath School lessons in the Library, and add your photo to your profile so everyone knows who you are.'
     });
   }
   bump_();
@@ -170,7 +170,7 @@ function worshipReminders() {
       props.setProperty('REMINDED', done.slice(-30).join(','));
       bump_();
     });
-    osPush_(getSetting_('churchName') || 'Isabel Church 2', post.text);
+    osPush_(getSetting_('churchName') || 'Apale SDA Church', post.text);
     if (getSetting_('autoSms') === '1' && smsProvider_() === 'SEMAPHORE') {
       try { smsSend_(post, false); } catch (e) { Logger.log('Reminder text not sent: ' + e.message); }
     }
@@ -178,7 +178,7 @@ function worshipReminders() {
 }
 
 /* Run once from the editor: moves files uploaded before member folders existed into each member's own folder
-   (Isabel Church 2 files / Members / Name). Church logos and other files with no owner stay where they are. */
+   (Apale SDA Church files / Members / Name). Church logos and other files with no owner stay where they are. */
 function organizeFiles() {
   const members = {};
   readAll_('Members').forEach(function (m) { members[m.id] = m; });
@@ -236,11 +236,11 @@ function eventReminders_(now) {
       props.setProperty('EV_REMINDED', done.slice(-40).join(','));
       bump_();
     });
-    osPush_(getSetting_('churchName') || 'Isabel Church 2', text);
+    osPush_(getSetting_('churchName') || 'Apale SDA Church', text);
   });
 }
 
-/* Makes a copy of the whole church sheet in "Isabel Church 2 files / Backups" and keeps the newest 8 copies.
+/* Makes a copy of the whole church sheet in "Apale SDA Church files / Backups" and keeps the newest 8 copies.
    It runs by itself once a week (with the hourly trigger), or run backupNow from the editor any time. */
 function backupNow() { Logger.log('Saved backup: ' + backup_()); }
 function backup_() {
@@ -249,7 +249,7 @@ function backup_() {
   const id = props.getProperty('BACKUP_FOLDER_ID');
   if (id) { try { folder = DriveApp.getFolderById(id); } catch (e) { folder = null; } }
   if (!folder) { folder = folder_().createFolder('Backups'); props.setProperty('BACKUP_FOLDER_ID', folder.getId()); }
-  const name = 'Isabel Church 2 backup ' + phDate_(nowMs_());
+  const name = 'Apale SDA Church backup ' + phDate_(nowMs_());
   DriveApp.getFileById(SpreadsheetApp.getActiveSpreadsheet().getId()).makeCopy(name, folder);
   const list = [], it = folder.getFiles();
   while (it.hasNext()) list.push(it.next());
@@ -288,7 +288,7 @@ function resetPasswordFromEditor() {
 
 /* ---------- web app entry points ---------- */
 function doGet() {
-  return json_({ ok: true, app: 'Isabel Church 2', rev: rev_(), bigUpload: true, memberFolders: true, memberStatus: true, siteEditor: true, records: true, officers: true, push: true, giving: true, roster: true, anniversaries: true, visitors: true, prayers: true, lesson: true, offerings: true, transfers: true, consent: true, activity: true, photoMonths: true, messaging: true, pushTargeted: true, v: 16 });
+  return json_({ ok: true, app: 'Apale SDA Church', rev: rev_(), bigUpload: true, memberFolders: true, memberStatus: true, siteEditor: true, records: true, officers: true, push: true, giving: true, roster: true, anniversaries: true, visitors: true, prayers: true, lesson: true, offerings: true, transfers: true, consent: true, activity: true, photoMonths: true, messaging: true, pushTargeted: true, v: 16 });
 }
 
 function doPost(e) {
@@ -342,7 +342,7 @@ const ACTIONS = {
   ping: function () { return { rev: rev_() }; },
 
   publicInfo: function () {
-    return { rev: rev_(), church: { churchName: getSetting_('churchName') || 'Isabel Church 2', tagline: getSetting_('tagline') || '', bgId: getSetting_('bgId') || '' } };
+    return { rev: rev_(), church: { churchName: getSetting_('churchName') || 'Apale SDA Church', tagline: getSetting_('tagline') || '', bgId: getSetting_('bgId') || '' } };
   },
 
   /* a first-time visitor introduces themselves without needing an account */
@@ -448,7 +448,7 @@ const ACTIONS = {
   sync: function (r, me) {
     if (me.access === 'pending') {
       return { rev: rev_(), pending: true, me: { id: me.id, access: 'pending', name: me.name },
-        settings: { churchName: getSetting_('churchName') || 'Isabel Church 2', tagline: getSetting_('tagline') || '', bgId: getSetting_('bgId') || '' },
+        settings: { churchName: getSetting_('churchName') || 'Apale SDA Church', tagline: getSetting_('tagline') || '', bgId: getSetting_('bgId') || '' },
         members: [], posts: [], comments: [], reactions: [], files: [], program: [], events: [] };
     }
     const lv = me.access === 'admin' ? 'a' : me.access === 'clerk' ? 'c' : canPost_(me) ? 'e' : 'm';
@@ -492,7 +492,7 @@ const ACTIONS = {
     const id = id_('p');
     append_('Posts', { id: id, authorId: me.id, cat: cat, text: text, photos: ids.join(','), pinned: (canPost_(me) && r.pinned) ? '1' : '', createdAt: String(Date.now()), svc: svc, grp: grp });
     activity_(me, 'post', (grp ? 'Group post' : cat === 'announcement' ? 'Announcement' : cat) + (text ? ': ' + text.slice(0, 60) : '') + (ids.length ? ' · ' + ids.length + ' photo' + (ids.length > 1 ? 's' : '') : ''));
-    if (cat === 'announcement' && !grp) osPush_(getSetting_('churchName') || 'Isabel Church 2', text);
+    if (cat === 'announcement' && !grp) osPush_(getSetting_('churchName') || 'Apale SDA Church', text);
     return { id: id };
   },
 
@@ -693,7 +693,7 @@ const ACTIONS = {
     if (me.access !== 'admin') throw err_('Only church leaders can change settings.', 'denied');
     log_(me, 'settings', null, 'Changed the church settings');
     const upd = {};
-    upd.churchName = clean_(r.churchName, 60) || 'Isabel Church 2';
+    upd.churchName = clean_(r.churchName, 60) || 'Apale SDA Church';
     upd.tagline = clean_(r.tagline, 80);
     upd.schedule = clean_(r.schedule, 400, true);
     upd.verse = clean_(r.verse, 300, true);
@@ -1565,7 +1565,7 @@ function normPhone_(v) {
 function smsProvider_() {
   return String(PropertiesService.getScriptProperties().getProperty('SMS_PROVIDER') || '').toUpperCase() === 'SEMAPHORE' ? 'SEMAPHORE' : 'OUTBOX';
 }
-function smsPrefix_() { return PropertiesService.getScriptProperties().getProperty('SMS_PREFIX') || 'ISABEL CHURCH 2'; }
+function smsPrefix_() { return PropertiesService.getScriptProperties().getProperty('SMS_PREFIX') || 'APALE SDA CHURCH'; }
 function smsText_(text) {
   let t = '[' + smsPrefix_() + '] ' + String(text || '').replace(/\s+/g, ' ').trim();
   if (t.length > SMS_MAX_CHARS) t = t.slice(0, SMS_MAX_CHARS - 3) + '...';
@@ -1712,11 +1712,11 @@ function folder_() {
   const props = PropertiesService.getScriptProperties();
   const id = props.getProperty('FOLDER_ID');
   if (id) { try { return DriveApp.getFolderById(id); } catch (e) { /* recreate below */ } }
-  const f = DriveApp.createFolder('Isabel Church 2 files');
+  const f = DriveApp.createFolder('Apale SDA Church files');
   props.setProperty('FOLDER_ID', f.getId());
   return f;
 }
-/* Each member gets their own folder inside the church folder: Isabel Church 2 files / Members / Name (username) */
+/* Each member gets their own folder inside the church folder: Apale SDA Church files / Members / Name (username) */
 function memberFolder_(me) {
   const props = PropertiesService.getScriptProperties(), key = 'MF_' + me.id;
   const id = props.getProperty(key);

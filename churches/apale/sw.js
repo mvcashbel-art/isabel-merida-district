@@ -1,10 +1,10 @@
-/* Isabel Church 2: keeps the site working with weak or no signal.
+/* Apale SDA Church: keeps the site working with weak or no signal.
    Put this file next to index.html on GitHub. The site registers it by itself. */
 /* OneSignal push (only does anything once an App ID is set in config.js and you have subscribed). Guarded so the site still works offline if it cannot load. */
 try { self.importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js'); } catch (e) { /* offline or not configured: the site still works */ }
-const VERSION = 'isabel2-v6';
+const VERSION = 'apale-v6';
 const CORE = ['./', './index.html', './config.js', './manifest.json', './logo-mark.png', './icon-192.png', './icon-512.png', './bible-game.html'];
-const PICS = 'isabel2-pics-v1';
+const PICS = 'apale-pics-v1';
 const MAX_PICS = 250;
 
 self.addEventListener('install', e => {
@@ -67,8 +67,8 @@ self.addEventListener('fetch', e => {
 /* tapping a church notification opens the church page */
 self.addEventListener('notificationclick', e => {
   const tag = e.notification && e.notification.tag;
-  if (tag && tag !== 'isabel2-ann' && tag !== 'isabel2-chat') return; // let OneSignal handle its own notifications
-  const dest = tag === 'isabel2-chat' ? './#messages' : './#news';
+  if (tag && tag !== 'apale-ann' && tag !== 'apale-chat') return; // let OneSignal handle its own notifications
+  const dest = tag === 'apale-chat' ? './#messages' : './#news';
   e.notification.close();
   e.waitUntil(self.clients.matchAll({type: 'window', includeUncontrolled: true}).then(list => {
     const open = list.find(c => c.url.indexOf(self.registration.scope) === 0);

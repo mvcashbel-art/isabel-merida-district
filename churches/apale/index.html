@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Isabel Church 2</title>
+<title>Apale SDA Church</title>
 <meta name="description" content="Our church family page: announcements, prayer requests, sermons and members.">
 <meta name="theme-color" content="#1D6A8A">
 <link rel="manifest" href="manifest.json">
@@ -11,11 +11,11 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <!-- Link preview in Messenger and Facebook. If your GitHub name or repository name is different, change the two web addresses below. -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Isabel Church 2">
-<meta property="og:title" content="Isabel Church 2 family page">
-<meta property="og:description" content="Announcements, prayer requests, sermons and members of our church family in Isabel, Leyte.">
-<meta property="og:url" content="https://mvcashbel-art.github.io/isabel-merida-district/churches/isabel-2/">
-<meta property="og:image" content="https://mvcashbel-art.github.io/isabel-merida-district/churches/isabel-2/og-image.jpg">
+<meta property="og:site_name" content="Apale SDA Church">
+<meta property="og:title" content="Apale SDA Church family page">
+<meta property="og:description" content="Announcements, prayer requests, sermons and members of our church family in Apale, Isabel, Leyte.">
+<meta property="og:url" content="https://mvcashbel-art.github.io/isabel-merida-district/churches/apale/">
+<meta property="og:image" content="https://mvcashbel-art.github.io/isabel-merida-district/churches/apale/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -663,15 +663,15 @@ body:has(#auth) .fabs{display:none!important}
 </style>
 </head>
 <body>
-<div id="splash" aria-hidden="true"><div class="sp-in"><img src="logo-mark.png" alt="" width="140" height="140"><b>Isabel Church 2</b><span>Isabel, Leyte</span><div class="sp-dots"><i></i><i></i><i></i></div></div></div>
-<script>try { var lk = JSON.parse(localStorage.getItem('isabel2Look') || 'null'); if (lk){ var sp = document.getElementById('splash'); if (lk.logo) sp.querySelector('img').src = lk.logo; if (lk.name) sp.querySelector('b').textContent = lk.name; if (lk.tag) sp.querySelector('span').textContent = lk.tag; if (lk.accent){ document.documentElement.style.setProperty('--accent', lk.accent); document.documentElement.style.setProperty('--accent-dark', lk.dark); } } } catch (e) {}</script>
+<div id="splash" aria-hidden="true"><div class="sp-in"><img src="logo-mark.png" alt="" width="140" height="140"><b>Apale SDA Church</b><span>Apale, Isabel, Leyte</span><div class="sp-dots"><i></i><i></i><i></i></div></div></div>
+<script>try { var lk = JSON.parse(localStorage.getItem('apaleLook') || 'null'); if (lk){ var sp = document.getElementById('splash'); if (lk.logo) sp.querySelector('img').src = lk.logo; if (lk.name) sp.querySelector('b').textContent = lk.name; if (lk.tag) sp.querySelector('span').textContent = lk.tag; if (lk.accent){ document.documentElement.style.setProperty('--accent', lk.accent); document.documentElement.style.setProperty('--accent-dark', lk.dark); } } } catch (e) {}</script>
 <script>window.__sp0 = Date.now(); setTimeout(function () { var s = document.getElementById('splash'); if (s) s.remove(); }, 8000);</script>
 <div class="bg" id="bg"></div><div class="veil"></div>
 
 <header class="top"><div class="top-in">
   <a class="brand" href="#home" data-route="home">
     <span class="mark" id="mark"></span>
-    <span><b id="brandName">Isabel Church 2</b><small id="brandTag">Isabel, Leyte</small></span>
+    <span><b id="brandName">Apale SDA Church</b><small id="brandTag">Apale, Isabel, Leyte</small></span>
   </a>
   <nav class="dnav" id="dnav" aria-label="Main"></nav>
   <div class="top-r">
@@ -831,7 +831,7 @@ function applySite(){
   LOGO = `<img src="${logo || 'logo-mark.png'}" alt="">`;
   const mk = $('#mark'); if (mk) mk.innerHTML = LOGO;
   const fav = document.querySelector('link[rel=icon]'); if (fav) fav.href = logo || 'icon-192.png';
-  try { localStorage.setItem('isabel2Look', JSON.stringify({logo, name:st.churchName || '', tag:st.tagline || '', accent:c[1], dark:c[2]})); } catch (e) {}
+  try { localStorage.setItem('apaleLook', JSON.stringify({logo, name:st.churchName || '', tag:st.tagline || '', accent:c[1], dark:c[2]})); } catch (e) {}
   if (!first) textLayerRefresh();
   return !first;
 }
@@ -892,7 +892,7 @@ const stOf = p => (p && p.status) || 'active';
 const isDead = p => stOf(p) === 'deceased';
 const stDate = d => { if (!/^\d{4}-\d{2}-\d{2}$/.test(d || '')) return ''; const x = new Date(d + 'T00:00:00Z'); return `${MONTHS[x.getUTCMonth()]} ${x.getUTCDate()}, ${x.getUTCFullYear()}`; };
 const stPill = p => stOf(p) === 'active' ? '' : `<span class="st-pill st-${stOf(p)}">${isDead(p) ? 'In loving memory' : mstLabel(stOf(p))}</span>`;
-const nameOf = id => id === 'system' ? (S.settings.churchName || 'Isabel Church 2') : (S.profiles[id] && S.profiles[id].name) || 'Church member';
+const nameOf = id => id === 'system' ? (S.settings.churchName || 'Apale SDA Church') : (S.profiles[id] && S.profiles[id].name) || 'Church member';
 function av(id, size = 'md'){
   if (id === 'system') return `<span class="av ${size} sys">${LOGO}</span>`;
   const p = S.profiles[id], u = p && p.avatar ? imgUrl(p.avatar, 200) : '';
@@ -1018,7 +1018,7 @@ async function sync(){
 }
 
 /* last good copy of the church page, so the next visit shows something at once */
-const CACHE_KEY = 'isabel2Cache1';
+const CACHE_KEY = 'apaleCache1';
 function saveCache(j){
   try {
     if (!S.token) return;
@@ -1039,8 +1039,8 @@ async function act(action, data){
   try { const j = await api(action, data); await sync(); return j; }
   catch (e){ toast(errMsg(e)); throw e; }
 }
-function saveToken(){ try { S.token ? localStorage.setItem('isabel2Token', S.token) : localStorage.removeItem('isabel2Token'); } catch (e) {} }
-function loadToken(){ try { return localStorage.getItem('isabel2Token') || ''; } catch (e) { return ''; } }
+function saveToken(){ try { S.token ? localStorage.setItem('apaleToken', S.token) : localStorage.removeItem('apaleToken'); } catch (e) {} }
+function loadToken(){ try { return localStorage.getItem('apaleToken') || ''; } catch (e) { return ''; } }
 
 /* poll cheaply: only fetch everything when something changed */
 let pollTimer = 0, polling = false;
@@ -1157,7 +1157,7 @@ const fileToB64 = f => new Promise((res, rej) => {
   r.readAsDataURL(f);
 });
 
-/* ---------- Sabbath (approximate sunset in Isabel, Leyte) ---------- */
+/* ---------- Sabbath (approximate sunset in Apale, Isabel, Leyte) ---------- */
 const LAT = 10.93, LNG = 124.42, TZ = 8;
 function sunsetUTC(y, m, d){
   const day = Date.UTC(y, m, d), n = Math.round((day - Date.UTC(y, 0, 0)) / 864e5);
@@ -1197,7 +1197,7 @@ function sabbathCard(){
     head = 'Sabbath begins in ' + (dd ? `${dd} day${dd > 1 ? 's' : ''} ${hh} hr` : hh ? `${hh} hr ${mm} min` : `${mm} min`);
     line = `${phDay(s.start)}, at about ${phTime(s.start)}.`;
   }
-  return `<div class="eyebrow">${s.on ? 'Sabbath hours' : 'Next Sabbath'}</div><h2>${head}</h2><p>${line}</p><p style="margin-top:6px;font-size:.78rem;opacity:.8">Sunset estimate for Isabel. Check your local time.</p>`;
+  return `<div class="eyebrow">${s.on ? 'Sabbath hours' : 'Next Sabbath'}</div><h2>${head}</h2><p>${line}</p><p style="margin-top:6px;font-size:.78rem;opacity:.8">Sunset estimate for Apale. Check your local time.</p>`;
 }
 
 /* ---------- modal, confirm, photo viewer ---------- */
@@ -1243,7 +1243,7 @@ function showAuth(mode, msg){
   hideSplash();
   let a = $('#auth');
   if (!a){ a = document.createElement('div'); a.id = 'auth'; a.className = 'auth'; document.body.appendChild(a); }
-  const name = S.settings.churchName || 'Isabel Church 2', tag = S.settings.tagline || 'Isabel, Leyte';
+  const name = S.settings.churchName || 'Apale SDA Church', tag = S.settings.tagline || 'Apale, Isabel, Leyte';
   const head = `<div class="auth-brand"><span class="mark">${LOGO}</span><div><h1>${esc(name)}</h1><p class="muted">${esc(tag)}</p></div></div>`;
   let body;
   if (mode === 'setup'){
@@ -1319,7 +1319,7 @@ function consentField(id){
   return `<label class="consent"><input type="checkbox" id="${id}" required> I agree that the church may keep these details to contact me. <button type="button" class="linkish" data-act="privacy">Read the privacy notice</button></label>`;
 }
 function openPrivacyModal(){
-  const church = esc(S.settings.churchName || 'Isabel Church 2');
+  const church = esc(S.settings.churchName || 'Apale SDA Church');
   openModal('Privacy notice', `<div class="m-body"><p>${church} respects your privacy. We follow the Philippine Data Privacy Act of 2012 (RA 10173).</p>
     <p><b>What we collect.</b> Your name, how to reach you, and anything you choose to share such as a prayer request or your church details.</p>
     <p><b>Why.</b> So church leaders can welcome you, pray with you, and keep the church's records.</p>
@@ -1415,9 +1415,9 @@ function navHTML(kind){
 /* ---------- frame pieces ---------- */
 function renderChrome(){
   const st = S.settings;
-  $('#brandName').textContent = st.churchName || 'Isabel Church 2';
-  $('#brandTag').textContent = st.tagline || 'Isabel, Leyte';
-  document.title = st.churchName || 'Isabel Church 2';
+  $('#brandName').textContent = st.churchName || 'Apale SDA Church';
+  $('#brandTag').textContent = st.tagline || 'Apale, Isabel, Leyte';
+  document.title = st.churchName || 'Apale SDA Church';
   const sw = Math.round((window.screen.width || 1280) * Math.min(window.devicePixelRatio || 1, 2));
   const u = imgUrl(st.bgId, sw <= 800 ? 800 : sw <= 1280 ? 1280 : 1920);
   $('#bg').style.backgroundImage = u ? `url("${u}")` : '';
@@ -1902,7 +1902,7 @@ async function sendAnn(){
 }
 async function copyAnn(id){
   const p = S.posts.find(x => x.id === id); if (!p) return;
-  const text = (S.settings.churchName || 'Isabel Church 2') + ' announcement:\n' + (p.text || '') + shareParticipants(p);
+  const text = (S.settings.churchName || 'Apale SDA Church') + ' announcement:\n' + (p.text || '') + shareParticipants(p);
   try { await navigator.clipboard.writeText(text); toast('Copied. Paste it into Messenger or a text message.'); }
   catch (e){
     const m = openModal('Copy announcement', `<label class="fld" for="cpT">Select this message and copy it<textarea id="cpT" readonly rows="6">${esc(text)}</textarea></label><div class="m-actions"><button class="btn primary" type="button" data-act="closemodal">Done</button></div>`);
@@ -1926,11 +1926,11 @@ async function shareOut(title, text, url){
 }
 function shareAnn(id){
   const p = S.posts.find(x => x.id === id); if (!p) return;
-  const name = S.settings.churchName || 'Isabel Church 2';
+  const name = S.settings.churchName || 'Apale SDA Church';
   shareOut(name, name + ' announcement:\n' + (p.text || '') + shareParticipants(p), siteUrl() + '#news');
 }
 function shareInvite(){
-  const name = S.settings.churchName || 'Isabel Church 2';
+  const name = S.settings.churchName || 'Apale SDA Church';
   const code = S.isAdmin && S.settings.joinCode ? `\nJoin code: ${S.settings.joinCode}` : '';
   shareOut(name, `Join the ${name} family page. See announcements, share prayer requests and testimonies, and find sermons and lessons.${code}`, siteUrl());
 }
@@ -2230,7 +2230,7 @@ function openProfileModal(uid){
         <label class="fld" for="pBaD">Date of baptism<input id="pBaD" type="date" value="${esc(bdFull ? bd : '')}"><small>Only know the year? Leave the date empty and type the year below.</small></label>
         <label class="fld" for="pBaY">Year of baptism<input id="pBaY" maxlength="4" inputmode="numeric" placeholder="Year" value="${esc(!bdFull ? bd : '')}"></label>
         <label class="fld" for="pBaBy">Baptized by<input id="pBaBy" maxlength="80" list="pastorList" value="${esc(p.baptBy || '')}" placeholder="Name of the pastor"><datalist id="pastorList">${[...new Set(Object.values(S.profiles).map(x => x.baptBy).filter(Boolean))].map(x => `<option value="${esc(x)}">`).join('')}</datalist></label>
-        <label class="fld" for="pBaAt">Place of baptism<input id="pBaAt" maxlength="120" value="${esc(p.baptPlace || '')}" placeholder="For example: Isabel River, or the church"></label>
+        <label class="fld" for="pBaAt">Place of baptism<input id="pBaAt" maxlength="120" value="${esc(p.baptPlace || '')}" placeholder="For example: Apale River, or the church"></label>
       </fieldset>` : ''}
       ${!self ? `<fieldset class="fset"><legend>Status</legend>${statusFields(p)}</fieldset>` : ''}
       ${self ? `<label class="fld" for="pPhone">Mobile number for text alerts<input id="pPhone" type="tel" inputmode="tel" maxlength="20" autocomplete="tel" value="${esc((S.me && S.me.phone) || '')}" placeholder="09171234567"><small>Only church leaders can see this. It is never shown to other members.</small></label>
@@ -2502,7 +2502,7 @@ function openSettingsModal(){
   const st = S.settings;
   const m = openModal('Church settings', `
     <form id="sForm" class="m-body" style="padding:0">
-      <label class="fld" for="sName">Church name<input id="sName" maxlength="60" value="${esc(st.churchName || 'Isabel Church 2')}"></label>
+      <label class="fld" for="sName">Church name<input id="sName" maxlength="60" value="${esc(st.churchName || 'Apale SDA Church')}"></label>
       <label class="fld" for="sTag">Tagline or location<input id="sTag" maxlength="80" value="${esc(st.tagline || '')}"></label>
       <fieldset class="svc"><legend>Worship times</legend>
         <div id="svcList">${svcRows(services())}</div>
@@ -2899,7 +2899,7 @@ function bulletinData(){
   const anns = livePosts().filter(p => p.cat === 'announcement' && !p.grp && Date.now() - (p.createdAt || 0) < 8 * 864e5).sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
   const n = Date.parse(date + 'T00:00:00Z'), bdays = [];
   for (let i = -6; i <= 6; i++){ const md = new Date(n + i * 864e5).toISOString().slice(5, 10); Object.values(S.profiles).filter(p => p.bday === md && !isDead(p)).forEach(p => bdays.push(p.name)); }
-  return {date, sab, svcs, events, anns, bdays, verse:S.settings.verse || '', name:S.settings.churchName || 'Isabel Church 2', tag:S.settings.tagline || ''};
+  return {date, sab, svcs, events, anns, bdays, verse:S.settings.verse || '', name:S.settings.churchName || 'Apale SDA Church', tag:S.settings.tagline || ''};
 }
 function bulletinHTML(d){
   const rows = [['Sabbath School lesson', d.sab.lesson], ['Sabbath School', d.sab.ssTeacher], ['Speaker', d.sab.speaker], ['Scripture reading', d.sab.reading]].filter(r => r[1]);
@@ -2940,7 +2940,7 @@ async function copyText(t){
   catch (e){ const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); toast('Copied. Paste it into Messenger or a text message.'); } catch (x){ toast('Could not copy on this phone.'); } ta.remove(); }
 }
 /* ---------- notifications on this phone for new announcements ---------- */
-const NOTIF_KEY = 'isabel2Notif', ANN_SEEN = 'isabel2AnnSeen';
+const NOTIF_KEY = 'apaleNotif', ANN_SEEN = 'apaleAnnSeen';
 const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const lsSet = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} };
 const notifOn = () => lsGet(NOTIF_KEY) === '1' && 'Notification' in window && Notification.permission === 'granted';
@@ -2977,8 +2977,8 @@ function notifyNew(){
   const fresh = S.posts.filter(p => p.cat === 'announcement' && (p.createdAt || 0) > seen && p.authorId !== S.uid && !expiredReminder(p)).sort((a, b) => b.createdAt - a.createdAt);
   lsSet(ANN_SEEN, String(Math.max(seen, ...S.posts.map(p => p.createdAt || 0))));
   if (!fresh.length) return;
-  const title = (S.settings.churchName || 'Isabel Church 2') + (fresh.length > 1 ? ` · ${fresh.length} new announcements` : '');
-  const opt = {body:String(fresh[0].text || '').slice(0, 180), icon:'icon-192.png', badge:'icon-192.png', tag:'isabel2-ann'};
+  const title = (S.settings.churchName || 'Apale SDA Church') + (fresh.length > 1 ? ` · ${fresh.length} new announcements` : '');
+  const opt = {body:String(fresh[0].text || '').slice(0, 180), icon:'icon-192.png', badge:'icon-192.png', tag:'apale-ann'};
   const show = () => { try { new Notification(title, opt); } catch (e) {} };
   if (navigator.serviceWorker) navigator.serviceWorker.getRegistration().then(r => r ? r.showNotification(title, opt) : show()).catch(show); else show();
 }
@@ -3023,7 +3023,7 @@ function openGivingModal(){
   const g = givingInfo();
   const m = openModal('Online giving', `<form id="gvForm" class="m-body" style="padding:0">
     <p class="muted">Shown to members so they can give their tithe and offering. Enter the church's own GCash, not a personal one.</p>
-    <label class="fld" for="gvName">GCash account name<input id="gvName" maxlength="60" value="${esc(g.name || '')}" placeholder="Isabel Church 2" autocomplete="off"></label>
+    <label class="fld" for="gvName">GCash account name<input id="gvName" maxlength="60" value="${esc(g.name || '')}" placeholder="Apale SDA Church" autocomplete="off"></label>
     <label class="fld" for="gvNum">GCash number<input id="gvNum" maxlength="40" value="${esc(g.number || '')}" inputmode="tel" placeholder="0917 123 4567" autocomplete="off"></label>
     <label class="fld" for="gvNote">Note (optional)<textarea id="gvNote" maxlength="400" placeholder="For example: write your name and 'tithe' or 'offering' in the message.">${esc(g.note || '')}</textarea></label>
     <label class="fld" for="gvQr">GCash QR code picture (optional)<input id="gvQr" type="file" accept="image/*"><small>Take a screenshot of your GCash QR and upload it here. Members can scan it to pay.</small></label>
@@ -3077,7 +3077,7 @@ function openRosterModal(forDate){
 function openDirectory(){
   const people = Object.values(S.profiles).filter(p => !isDead(p)).sort((a, b) => String(a.name).localeCompare(String(b.name)));
   const cardH = p => `<div class="dir-c">${av(p.id, 'sm')}<div class="dir-i"><b>${esc(p.name)}</b>${p.role ? `<span>${esc(p.role)}</span>` : ''}${p.household ? `<span class="dir-fam">${esc(p.household)}</span>` : ''}${p.baptDate ? `<span class="dir-b">Baptized ${esc(baptText(p.baptDate))}</span>` : ''}</div></div>`;
-  const html = `<div class="dir"><header class="bul-h">${LOGO}<div><h2>${esc(S.settings.churchName || 'Isabel Church 2')}</h2><p>Member directory · ${new Date().toLocaleDateString()}</p></div></header>
+  const html = `<div class="dir"><header class="bul-h">${LOGO}<div><h2>${esc(S.settings.churchName || 'Apale SDA Church')}</h2><p>Member directory · ${new Date().toLocaleDateString()}</p></div></header>
     <div class="dir-grid">${people.map(cardH).join('')}</div>
     <p class="bul-foot">${people.length} member${people.length === 1 ? '' : 's'} · Keep this directory private to the church.</p></div>`;
   const m = openModal('Member directory', `<div class="m-body" style="padding:0"><p class="muted">A printable list of members with photo, role and family. It has names, so keep it private to the church.</p>
@@ -3275,7 +3275,7 @@ function notifyChat(convos){
   fresh.sort((a, b) => b.lastTime - a.lastTime);
   const top = fresh[0];
   const title = fresh.length > 1 ? (fresh.length + ' new messages') : (top.kind === 'group' ? top.who + ' (group chat)' : top.who);
-  const opt = { body: String(top.lastText || 'New message').slice(0, 180), icon: 'icon-192.png', badge: 'icon-192.png', tag: 'isabel2-chat', renotify: true, data: { chat: 1 } };
+  const opt = { body: String(top.lastText || 'New message').slice(0, 180), icon: 'icon-192.png', badge: 'icon-192.png', tag: 'apale-chat', renotify: true, data: { chat: 1 } };
   const show = () => { try { new Notification(title, opt); } catch (e) {} };
   if (navigator.serviceWorker) navigator.serviceWorker.getRegistration().then(r => r ? r.showNotification(title, opt) : show()).catch(show); else show();
 }
@@ -3544,7 +3544,7 @@ async function bootSession(){
   }
 }
 /* ---------- Bisaya (Cebuano) ---------- */
-const LANG_KEY = 'isabel2Lang';
+const LANG_KEY = 'apaleLang';
 let LANG = (() => { try { return localStorage.getItem(LANG_KEY) === 'ceb' ? 'ceb' : 'en'; } catch (e) { return 'en'; } })();
 function setLang(l){
   try { localStorage.setItem(LANG_KEY, l); localStorage.setItem('sq_lang', JSON.stringify(l)); } catch (e) {}
@@ -3571,7 +3571,7 @@ const BIS = Object.assign({}, BIS_DAYS, BIS_MONTHS, BIS_MON3, {
   'A church admin needs to approve your account before you can see the church page. This keeps our church family safe. This page opens by itself once you are approved.':'Kinahanglan una nga aprobahan sa admin sa simbahan ang imong account sa dili pa nimo makita ang panid sa simbahan. Aron luwas ang atong pamilya sa simbahan. Moabli ra kini nga panid inig ka-aprobahan ka na.',
   // Sabbath
   'Next Sabbath':'Sunod nga Igpapahulay', 'Sabbath hours':'Oras sa Igpapahulay', 'Happy Sabbath':'Malipayong Igpapahulay',
-  'Sunset estimate for Isabel. Check your local time.':'Banabana sa pagsalop sa adlaw sa Isabel. Susiha ang oras sa inyong lugar.',
+  'Sunset estimate for Apale. Check your local time.':'Banabana sa pagsalop sa adlaw sa Apale. Susiha ang oras sa inyong lugar.',
   'This Sabbath':'Karong Igpapahulay', 'Lesson':'Leksyon', 'Sabbath School':'Tulunghaan sa Igpapahulay', 'Speaker':'Mamumulong', 'Reading':'Pagbasa',
   'Fill in this Sabbath':'Isulat ang alang niining Igpapahulay', "Share this week's lesson, speaker and reading with everyone.":'Ipaambit sa tanan ang leksyon, mamumulong ug pagbasa karong semanaha.',
   'Open the lesson':'Ablihi ang leksyon', 'Sabbath date':'Petsa sa Igpapahulay', 'Sabbath School lesson title':'Titulo sa leksyon sa Tulunghaan sa Igpapahulay',
@@ -3693,7 +3693,7 @@ const BIS = Object.assign({}, BIS_DAYS, BIS_MONTHS, BIS_MON3, {
   'Add a category':'Idugang og kategorya', 'Library categories':'Mga kategorya sa librarya', 'Church roles (one on each line)':'Mga papel sa simbahan (usa kada linya)',
   'The site is updated.':'Na-update na ang site.', 'Go back to the original logo':'Ibalik ang orihinal nga logo', 'Remove this change':'Tangtanga kini nga kausaban',
   'Baptism':'Bunyag', 'Baptized':'Gibunyagan', 'Baptized by':'Gibunyagan ni', 'Place of baptism':'Dapit sa bunyag', 'Date of baptism':'Petsa sa bunyag', 'Year of baptism':'Tuig sa bunyag',
-  'Name of the pastor':'Ngalan sa pastor', 'For example: Isabel River, or the church':'Pananglitan: Suba sa Isabel, o ang simbahan', 'Only know the year? Leave the date empty and type the year below.':'Tuig ra ang nahibaw-an? Ayaw butangi ang petsa ug isulat ang tuig sa ubos.',
+  'Name of the pastor':'Ngalan sa pastor', 'For example: Apale River, or the church':'Pananglitan: Suba sa Apale, o ang simbahan', 'Only know the year? Leave the date empty and type the year below.':'Tuig ra ang nahibaw-an? Ayaw butangi ang petsa ug isulat ang tuig sa ubos.',
   'Edit member':'Usba ang miyembro', 'Member saved.':'Na-save ang miyembro.', 'Remove the profile photo':'Tangtanga ang litrato sa profile', 'Remove the cover photo':'Tangtanga ang cover nga litrato',
   'Search by name, ministry or pastor':'Pangitaa pinaagi sa ngalan, ministeryo o pastor', 'About':'Bahin', 'Not saved.':'Wala na-save.',
   'Choose both the month and the day of the birthday, or neither.':'Pilia ang bulan ug adlaw sa pagkatawo, o ayaw tanan.', 'Type the year of baptism with 4 numbers, like 1998.':'Isulat ang tuig sa bunyag nga 4 ka numero, sama sa 1998.',

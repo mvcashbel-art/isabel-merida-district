@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bible Game · Isabel Church 2</title>
+<title>Bible Game · Apale SDA Church</title>
 <meta name="theme-color" content="#1D6A8A">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
@@ -361,7 +361,7 @@ body.hosting .wrap{max-width:1200px}
 </head>
 <body>
 <div class="wrap">
-  <div class="barrow"><a class="churchbar" href="index.html">&#8249; Isabel Church 2</a><div class="vctl"><button id="szDown" data-act="szdown" aria-label="Smaller">A&#8722;</button><button id="szUp" data-act="szup" aria-label="Bigger">A+</button><button id="fsBtn" data-act="full" aria-label="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
+  <div class="barrow"><a class="churchbar" href="index.html">&#8249; Apale SDA Church</a><div class="vctl"><button id="szDown" data-act="szdown" aria-label="Smaller">A&#8722;</button><button id="szUp" data-act="szup" aria-label="Bigger">A+</button><button id="fsBtn" data-act="full" aria-label="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button></div></div>
   <div class="top">
     <div class="brand">
       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 7c-2.6-2.2-6.6-3-11-2.2v18.4c4.4-.8 8.4 0 11 2.2 2.6-2.2 6.6-3 11-2.2V4.8C22.600 4 18.600 4.800 16 7z" fill="#1D6A8A"/><path d="M16 7v18.400" stroke="#EEF4F7" stroke-width="1.600" fill="none"/></svg>
@@ -1781,7 +1781,7 @@ function renderDuelResults() {
 
 /* ===================== Church link, Sabbath Challenge, leaderboards and more games ===================== */
 const CFG = window.CHURCH_CONFIG || {};
-const TOKEN = (() => { try { return localStorage.getItem('isabel2Token') || ''; } catch (e) { return ''; } })();
+const TOKEN = (() => { try { return localStorage.getItem('apaleToken') || ''; } catch (e) { return ''; } })();
 let VIEW = 'home';
 async function gapi(action, data = {}) {
   if (!CFG.API_URL || !TOKEN) { const e = new Error('signin'); e.code = 'auth'; throw e; }
@@ -1898,7 +1898,7 @@ const X = {
 };
 const x = k => { const v = X[LANG][k]; return v !== undefined ? v : X.en[k]; };
 
-/* ---------- time in Isabel (Philippine time) ---------- */
+/* ---------- time in Apale (Philippine time) ---------- */
 const phd = (ms = Date.now()) => new Date(ms + 8 * 36e5);
 const dayKey = (ms = Date.now()) => phd(ms).toISOString().slice(0, 10);
 function weekKey(ms = Date.now()) { const d = phd(ms), add = (6 - d.getUTCDay() + 7) % 7; return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + add)).toISOString().slice(0, 10); }
