@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>District Member Registry</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Young+Serif&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<style>
+/* Layout idea: officer tool. Status counts first, then a searchable member table; details open in a dialog. */
+:root{
+  --bg:#f6fafd;--surface:#ffffff;--ink:#14263a;--muted:#5a6f84;--line:#d8e5ef;
+  --blue:#1c6fb5;--blue-soft:#e3f0fa;--gold:#e3a72b;--gold-soft:#fdf3d9;
+  --ok:#1e7a4d;--ok-soft:#dff3e8;--warn:#9a6700;--warn-soft:#fff1cc;--bad:#b3261e;--bad-soft:#fbe3e1;--neutral:#5a6f84;--neutral-soft:#e9eef3;
+  --display:"Young Serif",Georgia,serif;--body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1824;--surface:#14222f;--ink:#e8f1f8;--muted:#9bb0c3;--line:#26394b;--blue:#6bb4ee;--blue-soft:#17304a;--gold:#f0bb4a;--gold-soft:#3a2f12;
+  --ok:#59d08f;--ok-soft:#14382a;--warn:#f0bb4a;--warn-soft:#3a2f12;--bad:#ff8a80;--bad-soft:#42201d;--neutral:#9bb0c3;--neutral-soft:#223445;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1824;--surface:#14222f;--ink:#e8f1f8;--muted:#9bb0c3;--line:#26394b;--blue:#6bb4ee;--blue-soft:#17304a;--gold:#f0bb4a;--gold-soft:#3a2f12;
+  --ok:#59d08f;--ok-soft:#14382a;--warn:#f0bb4a;--warn-soft:#3a2f12;--bad:#ff8a80;--bad-soft:#42201d;--neutral:#9bb0c3;--neutral-soft:#223445;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 1rem/1.55 var(--body)}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;line-height:1.15;text-wrap:balance}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+[hidden]{display:none!important}
+
+.top{background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;padding-bottom:12px;flex-wrap:wrap}
+.top h1{font-size:1.2rem}
+.who{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.9rem;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;font-weight:700;border:2px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer;text-decoration:none}
+:root[data-theme="dark"] .btn:not(.ghost){color:#0d1824}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn:not(.ghost){color:#0d1824}}
+.btn.ghost{background:transparent;color:var(--blue)}
+.btn.danger{border-color:var(--bad);color:var(--bad);background:transparent}
+.btn.small{padding:5px 12px;font-size:.85rem}
+.btn:disabled{opacity:.55;cursor:default}
+
+.privacy{background:var(--gold-soft);border-bottom:1px solid var(--line);font-size:.86rem;padding:8px 0}
+.demo{background:var(--blue-soft);font-size:.88rem;padding:8px 0;border-bottom:1px solid var(--line)}
+
+/* login */
+.login{max-width:420px;margin:48px auto;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:28px;display:grid;gap:14px;border-top:6px solid var(--gold)}
+.login h2{font-size:1.6rem}
+label{display:grid;gap:4px;font-weight:600;font-size:.9rem}
+input,select,textarea{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);width:100%}
+.err{color:var(--bad);font-weight:600;font-size:.92rem;min-height:1.3em}
+.muted{color:var(--muted)}
+
+/* tabs */
+.tabs{display:flex;gap:6px;margin:22px 0 16px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--surface);padding:8px 18px;border-radius:999px;font-weight:700;cursor:pointer}
+.tab[aria-selected="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+:root[data-theme="dark"] .tab[aria-selected="true"]{color:#0d1824}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .tab[aria-selected="true"]{color:#0d1824}}
+
+/* summary */
+.tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-bottom:18px}
+.tile{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;border-left-width:6px}
+.tile b{display:block;font-family:var(--display);font-weight:400;font-size:1.7rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile span{font-size:.85rem;color:var(--muted)}
+.tile[aria-pressed="true"]{outline:2px solid var(--blue)}
+.s-active{border-left-color:var(--ok)}.s-deceased{border-left-color:var(--neutral)}.s-breakaway{border-left-color:var(--bad)}
+.s-transferred{border-left-color:var(--blue)}.s-inactive{border-left-color:var(--warn)}.s-dropped{border-left-color:#7a2a6b}.s-all{border-left-color:var(--ink)}
+
+.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-weight:700;font-size:.8rem;white-space:nowrap}
+.pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.p-active{background:var(--ok-soft);color:var(--ok)}.p-deceased{background:var(--neutral-soft);color:var(--neutral)}
+.p-breakaway{background:var(--bad-soft);color:var(--bad)}.p-transferred{background:var(--blue-soft);color:var(--blue)}
+.p-inactive{background:var(--warn-soft);color:var(--warn)}.p-dropped{background:#f3dff0;color:#7a2a6b}
+:root[data-theme="dark"] .p-dropped{background:#3a2037;color:#e7a9dc}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .p-dropped{background:#3a2037;color:#e7a9dc}}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.toolbar input[type=search]{flex:1 1 220px;border-radius:999px}
+.toolbar select{width:auto;border-radius:999px}
+.tablebox{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:16px}
+table{border-collapse:collapse;width:100%;min-width:680px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);font-size:.93rem;vertical-align:middle}
+th{font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:none}
+tbody tr{cursor:pointer}tbody tr:hover{background:var(--blue-soft)}
+td.id{font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--muted)}
+.count{color:var(--muted);font-size:.9rem;margin:8px 2px}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;display:grid;gap:14px;margin-bottom:16px}
+.row2{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.result{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+
+/* dialog */
+dialog{border:none;border-radius:20px;padding:0;max-width:min(680px,calc(100vw - 24px));width:100%;background:var(--surface);color:var(--ink);max-height:92vh}
+dialog::backdrop{background:rgba(10,20,30,.55)}
+.dlg{padding:24px;display:grid;gap:16px}
+.dlg h3{font-size:1.5rem}
+.sec{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:10px}
+.sec h4{margin:0;font-size:.8rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.hist{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:.88rem}
+.hist li{display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
+.hist time{color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* id card */
+.idcard{width:100%;max-width:340px;border:2px solid var(--blue);border-radius:16px;padding:16px;background:var(--surface);display:grid;gap:8px;justify-self:start}
+.idcard .dist{font-weight:700;font-size:.78rem;letter-spacing:.07em;text-transform:uppercase;color:var(--blue)}
+.idcard .nm{font-family:var(--display);font-size:1.3rem;line-height:1.15}
+.idcard .qr{width:140px;height:140px;background:#fff;border-radius:8px;padding:4px}
+.idcard .qr svg{width:100%;height:100%;display:block}
+.idcard .num{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:.03em}
+.idcard small{color:var(--muted)}
+@media print{
+  body *{visibility:hidden}
+  #printArea,#printArea *{visibility:visible}
+  #printArea{position:absolute;left:0;top:0}
+}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;z-index:50}
+</style>
+</head>
+<body>
+
+<div class="demo" id="demoBar" hidden><div class="wrap">Demo mode with made-up members. Nothing is saved. Sign in as <b>district</b> / <b>demo</b> or <b>clerk</b> / <b>demo</b>. To go live, paste your Apps Script link into <code>API_URL</code>.</div></div>
+<div class="privacy"><div class="wrap">Confidential. Member details are for church work only. Do not share screenshots, lists or ID numbers outside the church leaders who need them.</div></div>
+
+<header class="top"><div class="wrap">
+  <h1 id="title">District Member Registry</h1>
+  <div class="who" id="who" hidden>
+    <span id="whoText"></span>
+    <button class="btn ghost small" id="signOut" type="button">Sign out</button>
+  </div>
+</div></header>
+
+<main class="wrap">
+
+  <!-- sign in -->
+  <form class="login" id="loginForm" autocomplete="on">
+    <h2>Officer sign-in</h2>
+    <p class="muted">For church clerks and district officers only. Ask the district office for an account.</p>
+    <label for="lgUser">Username<input id="lgUser" name="username" autocomplete="username" autocapitalize="none" required></label>
+    <label for="lgPass">Password<input id="lgPass" name="password" type="password" autocomplete="current-password" required></label>
+    <div class="err" id="lgErr" role="alert"></div>
+    <button class="btn" type="submit" id="lgBtn">Sign in</button>
+  </form>
+
+  <!-- forced password change -->
+  <form class="login" id="pwForm" hidden>
+    <h2>Set a new password</h2>
+    <p class="muted">Your temporary password must be replaced before you continue. Use at least 8 characters.</p>
+    <label for="pwOld">Temporary password<input id="pwOld" type="password" autocomplete="current-password" required></label>
+    <label for="pwNew">New password<input id="pwNew" type="password" autocomplete="new-password" minlength="8" required></label>
+    <div class="err" id="pwErr" role="alert"></div>
+    <button class="btn" type="submit">Save password</button>
+  </form>
+
+  <!-- app -->
+  <div id="app" hidden>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" data-tab="members" aria-selected="true">Members</button>
+      <button class="tab" role="tab" data-tab="check" aria-selected="false">Check someone</button>
+      <button class="tab" role="tab" data-tab="users" aria-selected="false" id="usersTab" hidden>Officers</button>
+    </div>
+
+    <section id="tab-members">
+      <div class="tiles" id="tiles"></div>
+      <div class="toolbar">
+        <input type="search" id="q" placeholder="Search name, ID or barangay" aria-label="Search members">
+        <select id="fChurch" aria-label="Church" hidden></select>
+        <button class="btn" id="addBtn" type="button">Add member</button>
+        <button class="btn ghost" id="csvBtn" type="button">Export CSV</button>
+      </div>
+      <div class="tablebox">
+        <table>
+          <thead><tr><th>Name</th><th>Member ID</th><th>Church</th><th>Barangay</th><th>Status</th><th>Since</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="count" id="count"></div>
+    </section>
+
+    <section id="tab-check" hidden>
+      <div class="panel">
+        <h2>Check someone</h2>
+        <p class="muted">Use this when a person says they belong to one of our churches. It searches the whole district and shows only name, church and status. Every search is recorded.</p>
+        <form class="row2" id="checkForm">
+          <label for="ckLast">Last name<input id="ckLast" required></label>
+          <label for="ckFirst">First name (optional)<input id="ckFirst"></label>
+          <div style="align-self:end"><button class="btn" type="submit">Check</button></div>
+        </form>
+        <div class="err" id="ckErr" role="alert"></div>
+        <div id="ckOut" style="display:grid;gap:10px"></div>
+      </div>
+    </section>
+
+    <section id="tab-users" hidden>
+      <div class="panel">
+        <h2>Officer accounts</h2>
+        <div class="tablebox"><table><thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Church</th><th>Account</th><th></th></tr></thead><tbody id="userRows"></tbody></table></div>
+      </div>
+      <form class="panel" id="userForm">
+        <h3 id="userFormTitle">Add an officer</h3>
+        <div class="row2">
+          <label for="uName">Full name<input id="uName" required></label>
+          <label for="uUser">Username<input id="uUser" required pattern="[a-z0-9._\-]{3,30}" autocapitalize="none"></label>
+          <label for="uRole">Role<select id="uRole"><option value="clerk">Church clerk (own church only)</option><option value="district">District officer (all churches)</option></select></label>
+          <label for="uChurch" id="uChurchWrap">Church<select id="uChurch"></select></label>
+          <label for="uActive">Account<select id="uActive"><option value="yes">On</option><option value="no">Off</option></select></label>
+        </div>
+        <div class="err" id="uErr" role="alert"></div>
+        <div class="actions"><button class="btn" type="submit">Save officer</button><button class="btn ghost" type="button" id="uReset">Clear form</button></div>
+        <p id="tempBox" class="muted" hidden></p>
+      </form>
+    </section>
+  </div>
+</main>
+
+<dialog id="dlg" aria-labelledby="dlgTitle"><div class="dlg" id="dlgBody"></div></dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ============================================================
+   SET THESE TWO BEFORE GOING LIVE
+   API_URL : the Apps Script "Web app" link ending in /exec. Leave blank to try the demo.
+   SITE_URL: the district website address that the ID card's QR code opens (ends with /).
+             Leave blank to use the folder this page is in.
+   ============================================================ */
+const API_URL = '';
+const SITE_URL = '';
+const DISTRICT_NAME = 'Isabel–Merida District';
+const IDLE_MINUTES = 15;
+
+const STATUS = {
+  active:      { label: 'Active',      long: 'Active member' },
+  deceased:    { label: 'Deceased',    long: 'Deceased' },
+  breakaway:   { label: 'Breakaway',   long: 'Left and joined a breakaway group' },
+  transferred: { label: 'Transferred', long: 'Transferred to another SDA church' },
+  inactive:    { label: 'Inactive',    long: 'Inactive / lost contact' },
+  dropped:     { label: 'Dropped',     long: 'Dropped from membership' }
+};
+const ORDER = ['active', 'inactive', 'breakaway', 'transferred', 'dropped', 'deceased'];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const DEMO = !API_URL;
+let token = '', me = null, churches = [], members = [], idleTimer = null;
+const ui = { status: 'all', church: 'all', q: '' };
+const churchName = c => (churches.find(x => x.code === c) || {}).name || c;
+const fullName = m => [m.firstName, m.middleName, m.lastName].filter(Boolean).join(' ');
+const pill = s => `<span class="pill p-${esc(s)}">${esc((STATUS[s] || { label: s }).label)}</span>`;
+
+/* ---------------- API ---------------- */
+async function api(action, data) {
+  const body = Object.assign({ action, token }, data || {});
+  let res;
+  if (DEMO) res = await demoApi(body);
+  else {
+    const r = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow' });
+    res = await r.json();
+  }
+  if (!res.ok) {
+    if (res.code === 'auth') { endSession('Your session ended. Please sign in again.'); }
+    const e = new Error(res.error || 'Something went wrong.'); e.code = res.code; throw e;
+  }
+  return res;
+}
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2600);
+}
+
+/* ---------------- session ---------------- */
+function resetIdle() {
+  clearTimeout(idleTimer);
+  if (token) idleTimer = setTimeout(() => endSession('You were signed out after ' + IDLE_MINUTES + ' minutes without activity.'), IDLE_MINUTES * 60000);
+}
+['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, resetIdle, { passive: true }));
+function endSession(msg) {
+  if (token && !DEMO) fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'logout', token }) }).catch(() => {});
+  token = ''; me = null; members = []; clearTimeout(idleTimer);
+  const d = $('#dlg'); if (d.open) d.close();
+  $('#app').hidden = true; $('#who').hidden = true; $('#pwForm').hidden = true; $('#loginForm').hidden = false;
+  $('#lgPass').value = ''; $('#lgErr').textContent = msg || '';
+}
+async function enter() {
+  if (me.mustChange) { $('#loginForm').hidden = true; $('#pwForm').hidden = false; return; }
+  $('#pwForm').hidden = true; $('#loginForm').hidden = true;
+  $('#who').hidden = false;
+  $('#whoText').textContent = me.name + ' · ' + (me.role === 'district' ? 'District officer' : 'Clerk, ') + (me.role === 'district' ? '' : '');
+  const cl = await api('listChurches'); churches = cl.churches;
+  if (me.role !== 'district') $('#whoText').textContent = me.name + ' · Clerk, ' + churchName(me.church);
+  $('#usersTab').hidden = me.role !== 'district';
+  $('#fChurch').hidden = me.role !== 'district';
+  $('#fChurch').innerHTML = '<option value="all">All churches</option>' + churches.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
+  $('#app').hidden = false; showTab('members'); await loadMembers(); resetIdle();
+}
+$('#loginForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('#lgErr').textContent = ''; $('#lgBtn').disabled = true;
+  try {
+    const r = await api('login', { username: $('#lgUser').value, password: $('#lgPass').value });
+    token = r.token; me = r.user; $('#lgPass').value = ''; await enter();
+  } catch (err) { $('#lgErr').textContent = err.message; }
+  $('#lgBtn').disabled = false;
+});
+$('#pwForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('#pwErr').textContent = '';
+  try {
+    await api('changePassword', { oldPassword: $('#pwOld').value, newPassword: $('#pwNew').value });
+    me.mustChange = false; $('#pwOld').value = ''; $('#pwNew').value = ''; await enter();
+  } catch (err) { $('#pwErr').textContent = err.message; }
+});
+$('#signOut').addEventListener('click', () => endSession(''));
+
+/* ---------------- tabs ---------------- */
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
+  ['members', 'check', 'users'].forEach(n => { $('#tab-' + n).hidden = n !== name; });
+  if (name === 'users') loadUsers();
+}
+document.querySelector('.tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) showTab(b.dataset.tab); });
+
+/* ---------------- members list ---------------- */
+async function loadMembers() { members = (await api('listMembers')).members; renderMembers(); }
+function visible() {
+  const q = ui.q.trim().toLowerCase();
+  return members.filter(m =>
+    (ui.status === 'all' || m.status === ui.status) &&
+    (ui.church === 'all' || m.church === ui.church) &&
+    (!q || (fullName(m) + ' ' + m.memberId + ' ' + m.barangay).toLowerCase().includes(q)))
+    .sort((a, b) => a.lastName.localeCompare(b.lastName) || a.firstName.localeCompare(b.firstName));
+}
+function renderMembers() {
+  const base = members.filter(m => ui.church === 'all' || m.church === ui.church);
+  const counts = { all: base.length }; ORDER.forEach(s => { counts[s] = base.filter(m => m.status === s).length; });
+  $('#tiles').innerHTML = [['all', 'Everyone']].concat(ORDER.map(s => [s, STATUS[s].label]))
+    .map(([k, l]) => `<button class="tile s-${k}" type="button" data-s="${k}" aria-pressed="${ui.status === k}"><b>${counts[k]}</b><span>${esc(l)}</span></button>`).join('');
+  const list = visible();
+  $('#rows').innerHTML = list.map(m => `<tr data-id="${esc(m.memberId)}" tabindex="0">
+    <td><b>${esc(m.lastName)}</b>, ${esc(m.firstName)} ${esc(m.middleName)}</td><td class="id">${esc(m.memberId)}</td>
+    <td>${esc(churchName(m.church))}</td><td>${esc(m.barangay)}</td><td>${pill(m.status)}</td><td>${esc(m.statusDate)}</td></tr>`).join('') ||
+    '<tr><td colspan="6" class="muted">No members match.</td></tr>';
+  $('#count').textContent = list.length + ' of ' + members.length + ' members shown';
+}
+$('#tiles').addEventListener('click', e => { const t = e.target.closest('.tile'); if (!t) return; ui.status = t.dataset.s; renderMembers(); });
+$('#q').addEventListener('input', e => { ui.q = e.target.value; renderMembers(); });
+$('#fChurch').addEventListener('change', e => { ui.church = e.target.value; renderMembers(); });
+$('#rows').addEventListener('click', e => { const r = e.target.closest('tr[data-id]'); if (r) openMember(r.dataset.id); });
+$('#rows').addEventListener('keydown', e => { if (e.key === 'Enter') { const r = e.target.closest('tr[data-id]'); if (r) openMember(r.dataset.id); } });
+$('#addBtn').addEventListener('click', () => openMember(null));
+
+/* CSV export */
+$('#csvBtn').addEventListener('click', async () => {
+  const list = visible(); if (!list.length) { toast('Nothing to export.'); return; }
+  const cols = ['memberId', 'lastName', 'firstName', 'middleName', 'sex', 'birthdate', 'church', 'barangay', 'phone', 'baptismDate', 'status', 'statusDate'];
+  const cell = v => { let s = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+  const csv = [cols.join(',')].concat(list.map(m => cols.map(c => cell(c === 'church' ? churchName(m.church) : m[c])).join(','))).join('\n');
+  try { await api('logExport', { count: list.length }); } catch (e) {}
+  try {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
+    a.download = 'members-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove(); toast('CSV downloaded. Keep it private.');
+  } catch (e) { navigator.clipboard && navigator.clipboard.writeText(csv).then(() => toast('CSV copied to clipboard.')); }
+});
+
+/* ---------------- member dialog ---------------- */
+function qrSvg(text) {
+  try { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); }
+  catch (e) { return ''; }
+}
+function verifyUrl(id) {
+  const base = SITE_URL || location.href.split('#')[0].replace(/[^/]*$/, '');
+  return base + '#verify-' + id;
+}
+async function openMember(id) {
+  const m = id ? members.find(x => x.memberId === id) : null;
+  const isNew = !m;
+  const v = k => esc(m ? m[k] : '');
+  const churchSel = me.role === 'district'
+    ? `<label for="fChurchSel">Church<select id="fChurchSel">${churches.map(c => `<option value="${esc(c.code)}"${m && m.church === c.code ? ' selected' : ''}>${esc(c.name)}</option>`).join('')}</select></label>`
+    : `<label>Church<input value="${esc(churchName(me.church))}" disabled></label>`;
+  $('#dlgBody').innerHTML = `
+    <div><h3>${isNew ? 'Add a member' : esc(fullName(m))}</h3>${isNew ? '' : `<p class="muted">${esc(m.memberId)} · ${esc(churchName(m.church))}</p>`}</div>
+    <form id="mForm" style="display:grid;gap:12px">
+      <div class="row2">
+        <label for="fLast">Last name<input id="fLast" value="${v('lastName')}" required></label>
+        <label for="fFirst">First name<input id="fFirst" value="${v('firstName')}" required></label>
+        <label for="fMid">Middle name<input id="fMid" value="${v('middleName')}"></label>
+        <label for="fSex">Sex<select id="fSex"><option value="">—</option><option value="F"${m && m.sex === 'F' ? ' selected' : ''}>Female</option><option value="M"${m && m.sex === 'M' ? ' selected' : ''}>Male</option></select></label>
+        <label for="fBirth">Birthdate<input id="fBirth" type="date" value="${v('birthdate')}"></label>
+        <label for="fBapt">Baptism date<input id="fBapt" type="date" value="${v('baptismDate')}"></label>
+        <label for="fBrgy">Barangay<input id="fBrgy" value="${v('barangay')}"></label>
+        <label for="fPhone">Mobile number<input id="fPhone" inputmode="tel" value="${v('phone')}"></label>
+        ${churchSel}
+      </div>
+      <label for="fNotes">Notes<textarea id="fNotes" rows="2">${v('notes')}</textarea></label>
+      <div class="err" id="mErr" role="alert"></div>
+      <div class="actions"><button class="btn" type="submit" id="mSave">${isNew ? 'Add member' : 'Save changes'}</button><button class="btn ghost" type="button" data-close>Close</button></div>
+    </form>
+    ${isNew ? '' : `
+    <div class="sec"><h4>Membership status</h4>
+      <p>${pill(m.status)} <span class="muted">since ${esc(m.statusDate)}${m.statusNote ? ' · ' + esc(m.statusNote) : ''}</span></p>
+      <form id="sForm" class="row2">
+        <label for="sSel">Change to<select id="sSel">${ORDER.map(s => `<option value="${s}"${m.status === s ? ' selected' : ''}>${esc(STATUS[s].long)}</option>`).join('')}</select></label>
+        <label for="sDate">Date<input id="sDate" type="date" value="${new Date().toISOString().slice(0, 10)}"></label>
+        <label for="sNote" style="grid-column:1/-1">Reason or church vote reference<input id="sNote" placeholder="Example: Board action 2026-11-09"></label>
+        <div><button class="btn ghost" type="submit">Save status</button></div>
+      </form>
+      <div class="err" id="sErr" role="alert"></div>
+    </div>
+    <div class="sec"><h4>Membership ID card</h4>
+      <div class="idcard" id="printArea">
+        <div class="dist">${esc(DISTRICT_NAME)} · Seventh-day Adventist</div>
+        <div class="nm">${esc(fullName(m))}</div>
+        <div class="muted">${esc(churchName(m.church))}</div>
+        <div class="qr">${qrSvg(verifyUrl(m.memberId))}</div>
+        <div class="num">${esc(m.memberId)}</div>
+        <small>To confirm, scan the code or enter the ID and last name on the district website.</small>
+      </div>
+      <div class="actions"><button class="btn ghost small" type="button" id="printBtn">Print ID card</button></div>
+    </div>
+    <div class="sec"><h4>History</h4><ul class="hist" id="hist"><li class="muted">Loading…</li></ul></div>`}`;
+  const d = $('#dlg'); d.showModal();
+  d.querySelectorAll('[data-close]').forEach(b => b.onclick = () => d.close());
+
+  $('#mForm').onsubmit = async ev => {
+    ev.preventDefault(); $('#mErr').textContent = ''; $('#mSave').disabled = true;
+    const member = { memberId: m ? m.memberId : '', lastName: $('#fLast').value, firstName: $('#fFirst').value, middleName: $('#fMid').value,
+      sex: $('#fSex').value, birthdate: $('#fBirth').value, baptismDate: $('#fBapt').value, barangay: $('#fBrgy').value, phone: $('#fPhone').value, notes: $('#fNotes').value };
+    if ($('#fChurchSel')) member.church = $('#fChurchSel').value;
+    try { await saveMember(member, false); }
+    catch (err) {
+      $('#mErr').textContent = err.message;
+      if (err.code === 'duplicate') {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'btn danger small'; b.textContent = 'Different person, save anyway';
+        b.onclick = async () => { try { await saveMember(member, true); } catch (e2) { $('#mErr').textContent = e2.message; } };
+        $('#mErr').appendChild(document.createElement('br')); $('#mErr').appendChild(b);
+      }
+    }
+    $('#mSave').disabled = false;
+  };
+  async function saveMember(member, force) {
+    const r = await api('saveMember', { member, force });
+    d.close(); await loadMembers(); toast(isNew ? 'Added ' + r.member.memberId : 'Saved');
+    if (isNew) openMember(r.member.memberId);
+  }
+  if (!isNew) {
+    $('#sForm').onsubmit = async ev => {
+      ev.preventDefault(); $('#sErr').textContent = '';
+      try {
+        await api('setStatus', { memberId: m.memberId, status: $('#sSel').value, statusDate: $('#sDate').value, note: $('#sNote').value });
+        d.close(); await loadMembers(); toast('Status updated'); openMember(m.memberId);
+      } catch (err) { $('#sErr').textContent = err.message; }
+    };
+    $('#printBtn').onclick = () => { try { window.print(); } catch (e) { toast('Printing is not available here.'); } };
+    try {
+      const h = (await api('history', { memberId: m.memberId })).history;
+      $('#hist').innerHTML = h.length ? h.map(x => `<li><time>${esc(x.time)}</time><span><b>${esc(x.action)}</b> by ${esc(x.user)}${x.detail ? ' · ' + esc(x.detail) : ''}</span></li>`).join('') : '<li class="muted">No history yet.</li>';
+    } catch (e) { $('#hist').innerHTML = '<li class="muted">History could not be loaded.</li>'; }
+  }
+}
+$('#dlg').addEventListener('click', e => { if (e.target === $('#dlg')) $('#dlg').close(); });
+
+/* ---------------- check someone ---------------- */
+$('#checkForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('#ckErr').textContent = ''; $('#ckOut').innerHTML = '';
+  try {
+    const r = await api('officerLookup', { lastName: $('#ckLast').value, firstName: $('#ckFirst').value });
+    $('#ckOut').innerHTML = r.results.length ? r.results.map(x => `<div class="result">
+      <div><b>${esc(x.name)}</b><div class="muted">${esc(x.church)} · ${esc(x.memberId)}</div></div>
+      <div>${pill(x.status)}<div class="muted" style="font-size:.82rem">${esc((STATUS[x.status] || {}).long || '')} since ${esc(x.statusDate)}</div></div></div>`).join('')
+      : '<div class="result"><div><b>No record found.</b><div class="muted">This person is not registered in the district. Do not treat them as a member until a church clerk confirms.</div></div></div>';
+  } catch (err) { $('#ckErr').textContent = err.message; }
+});
+
+/* ---------------- officers (district only) ---------------- */
+let users = [];
+async function loadUsers() {
+  users = (await api('listUsers')).users;
+  $('#uChurch').innerHTML = churches.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
+  $('#userRows').innerHTML = users.map(u => `<tr style="cursor:default"><td>${esc(u.username)}</td><td>${esc(u.name)}</td><td>${u.role === 'district' ? 'District officer' : 'Clerk'}</td><td>${esc(u.church ? churchName(u.church) : 'All')}</td>
+    <td>${u.active === 'yes' ? 'On' : '<span class="muted">Off</span>'}${u.mustChange === 'yes' ? ' <span class="muted">(new password pending)</span>' : ''}</td>
+    <td style="white-space:nowrap"><button class="btn ghost small" data-edit="${esc(u.username)}" type="button">Edit</button> <button class="btn ghost small" data-reset="${esc(u.username)}" type="button">Reset password</button></td></tr>`).join('');
+  syncRole();
+}
+function syncRole() { $('#uChurchWrap').hidden = $('#uRole').value !== 'clerk'; }
+$('#uRole').addEventListener('change', syncRole);
+$('#userRows').addEventListener('click', async e => {
+  const ed = e.target.closest('[data-edit]'), rs = e.target.closest('[data-reset]');
+  if (ed) {
+    const u = users.find(x => x.username === ed.dataset.edit);
+    $('#uName').value = u.name; $('#uUser').value = u.username; $('#uUser').readOnly = true; $('#uRole').value = u.role;
+    if (u.church) $('#uChurch').value = u.church; $('#uActive').value = u.active; $('#userFormTitle').textContent = 'Edit officer'; syncRole();
+    $('#userForm').scrollIntoView({ behavior: 'smooth' });
+  }
+  if (rs) {
+    try { const r = await api('resetPassword', { username: rs.dataset.reset }); showTemp(rs.dataset.reset, r.tempPassword); loadUsers(); }
+    catch (err) { toast(err.message); }
+  }
+});
+function showTemp(user, pw) {
+  const b = $('#tempBox'); b.hidden = false;
+  b.innerHTML = `Temporary password for <b>${esc(user)}</b>: <b style="font-size:1.1rem;letter-spacing:.04em">${esc(pw)}</b> · Give it to them privately. It will not be shown again, and they must change it at first sign-in.`;
+}
+function clearUserForm() { $('#userForm').reset(); $('#uUser').readOnly = false; $('#userFormTitle').textContent = 'Add an officer'; $('#uErr').textContent = ''; syncRole(); }
+$('#uReset').addEventListener('click', clearUserForm);
+$('#userForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('#uErr').textContent = '';
+  try {
+    const r = await api('saveUser', { name: $('#uName').value, username: $('#uUser').value, role: $('#uRole').value, church: $('#uChurch').value, active: $('#uActive').value });
+    if (r.tempPassword) showTemp($('#uUser').value.toLowerCase(), r.tempPassword); else toast('Saved');
+    clearUserForm(); loadUsers();
+  } catch (err) { $('#uErr').textContent = err.message; }
+});
+
+/* ---------------- demo backend (only when API_URL is blank) ---------------- */
+const demoState = (() => {
+  if (!DEMO) return null;
+  const ch = [['TBD', 'Tubod SDA Church', 'Isabel']];
+  for (let i = 2; i <= 12; i++) ch.push(['I' + ('0' + i).slice(-2), 'Isabel Church ' + i, 'Isabel']);
+  for (let i = 1; i <= 3; i++) ch.push(['M' + ('0' + i).slice(-2), 'Merida Church ' + i, 'Merida']);
+  const chk = s => { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 1296; return ('0' + h.toString(36).toUpperCase()).slice(-2); };
+  const mkId = (c, n) => { const b = 'IM-' + c + '-' + ('000' + n).slice(-4); return b + '-' + chk(b); };
+  const seed = [
+    ['TBD', 'Abella', 'Rosa', 'F', 'Tubod', 'active'], ['TBD', 'Gomez', 'Ernesto', 'M', 'Tubod', 'active'], ['TBD', 'Lim', 'Teresa', 'F', 'Tubod', 'inactive'],
+    ['TBD', 'Navarro', 'Dante', 'M', 'Tubod', 'breakaway'], ['TBD', 'Ocampo', 'Luz', 'F', 'Tubod', 'deceased'], ['TBD', 'Pineda', 'Joel', 'M', 'Tubod', 'active'],
+    ['I02', 'Quiroz', 'Anita', 'F', 'Sample Brgy', 'active'], ['I02', 'Ramos', 'Felix', 'M', 'Sample Brgy', 'transferred'], ['I02', 'Soriano', 'Grace', 'F', 'Sample Brgy', 'active'],
+    ['M01', 'Tan', 'Noel', 'M', 'Sample Brgy', 'dropped'], ['M01', 'Uy', 'Carmen', 'F', 'Sample Brgy', 'active'], ['M02', 'Villanueva', 'Rico', 'M', 'Sample Brgy', 'active']
+  ];
+  const cnt = {};
+  const mem = seed.map(s => { cnt[s[0]] = (cnt[s[0]] || 0) + 1; return { memberId: mkId(s[0], cnt[s[0]]), lastName: s[1], firstName: s[2], middleName: '', sex: s[3], birthdate: '', church: s[0], barangay: s[4], phone: '', baptismDate: '', status: s[5], statusDate: '2026-01-15', statusNote: '', notes: '' }; });
+  return { ch, mem, cnt, mkId, hist: {}, users: [
+    { username: 'district', name: 'Demo District Officer', role: 'district', church: '', active: 'yes', mustChange: 'no', pw: 'demo' },
+    { username: 'clerk', name: 'Demo Clerk', role: 'clerk', church: 'TBD', active: 'yes', mustChange: 'no', pw: 'demo' }] };
+})();
+async function demoApi(b) {
+  const S = demoState, key = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const fail = (error, code) => ({ ok: false, error, code });
+  const note = (id, action, detail) => { (S.hist[id] = S.hist[id] || []).unshift({ time: new Date().toISOString().slice(0, 16).replace('T', ' '), user: me ? me.username : 'demo', action, detail: detail || '' }); };
+  if (b.action === 'login') {
+    const u = S.users.find(x => x.username === String(b.username).trim().toLowerCase());
+    if (!u || u.pw !== b.password) return fail('Wrong username or password.');
+    return { ok: true, token: 'demo-' + u.username, user: { username: u.username, name: u.name, role: u.role, church: u.church, mustChange: false } };
+  }
+  const u = S.users.find(x => 'demo-' + x.username === b.token); if (!u) return fail('Your session ended. Please sign in again.', 'auth');
+  const scope = () => u.role === 'district' ? S.mem : S.mem.filter(m => m.church === u.church);
+  switch (b.action) {
+    case 'listChurches': return { ok: true, churches: S.ch.map(c => ({ code: c[0], name: c[1], municipality: c[2] })) };
+    case 'listMembers': return { ok: true, members: scope().map(m => ({ ...m })) };
+    case 'changePassword': return { ok: true };
+    case 'logout': case 'logExport': return { ok: true };
+    case 'saveMember': {
+      const m = b.member;
+      if (!m.lastName.trim() || !m.firstName.trim()) return fail('Enter the first and last name.');
+      if (m.memberId) { const cur = scope().find(x => x.memberId === m.memberId); if (!cur) return fail('Member not found.'); Object.assign(cur, m, { church: u.role === 'district' && m.church ? m.church : cur.church }); note(cur.memberId, 'edit'); return { ok: true, member: { ...cur } }; }
+      const church = u.role === 'district' ? m.church : u.church;
+      const dup = S.mem.find(x => key(x.lastName) === key(m.lastName) && key(x.firstName) === key(m.firstName));
+      if (dup && !b.force) return fail('Someone with this name is already registered: ' + dup.firstName + ' ' + dup.lastName + ' (' + (S.ch.find(c => c[0] === dup.church) || [])[1] + ', ' + dup.memberId + '). If this is a different person, save again to confirm.', 'duplicate');
+      S.cnt[church] = (S.cnt[church] || 0) + 1;
+      const rec = { ...m, church, memberId: S.mkId(church, S.cnt[church]), status: 'active', statusDate: new Date().toISOString().slice(0, 10), statusNote: '' };
+      S.mem.push(rec); note(rec.memberId, 'create'); return { ok: true, member: { ...rec } };
+    }
+    case 'setStatus': {
+      const cur = scope().find(x => x.memberId === b.memberId); if (!cur) return fail('Member not found.');
+      note(cur.memberId, 'status', cur.status + ' -> ' + b.status + (b.note ? ': ' + b.note : ''));
+      cur.status = b.status; cur.statusDate = b.statusDate || new Date().toISOString().slice(0, 10); cur.statusNote = b.note || ''; return { ok: true, member: { ...cur } };
+    }
+    case 'history': return { ok: true, history: S.hist[b.memberId] || [] };
+    case 'officerLookup': {
+      if (key(b.lastName).length < 2) return fail('Enter at least the last name.');
+      const hits = S.mem.filter(m => key(m.lastName) === key(b.lastName) && (!key(b.firstName) || key(m.firstName).startsWith(key(b.firstName))));
+      return { ok: true, results: hits.map(m => ({ memberId: m.memberId, name: m.firstName + ' ' + m.lastName, church: S.ch.find(c => c[0] === m.church)[1], status: m.status, statusDate: m.statusDate })) };
+    }
+    case 'listUsers': return { ok: true, users: S.users.map(({ pw, ...x }) => x) };
+    case 'saveUser': {
+      const un = String(b.username).toLowerCase(); const ex = S.users.find(x => x.username === un);
+      if (ex) { Object.assign(ex, { name: b.name, role: b.role, church: b.role === 'clerk' ? b.church : '', active: b.active }); return { ok: true }; }
+      S.users.push({ username: un, name: b.name, role: b.role, church: b.role === 'clerk' ? b.church : '', active: 'yes', mustChange: 'yes', pw: 'x' }); return { ok: true, tempPassword: 'Demo1234ab' };
+    }
+    case 'resetPassword': return { ok: true, tempPassword: 'Demo1234ab' };
+    default: return fail('Unknown action: ' + b.action);
+  }
+}
+if (DEMO) $('#demoBar').hidden = false;
+</script>
+</body>
+</html>

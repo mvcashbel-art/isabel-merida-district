@@ -1,0 +1,20 @@
+<!--
+  Tubod site: link back to the district site.
+  1. Paste the <style> block into your Tubod page's CSS and the <div> right after <body>.
+  2. Change DISTRICT_URL to the address of the district website.
+  Then, on the district site, put the Tubod site address in the Tubod entry's `website` field.
+
+  To show Tubod announcements on the district page: in your Tubod Google Sheet publish the
+  announcements tab and the events tab as CSV (File > Share > Publish to web > CSV), using these column
+  names in row 1:  title, date (YYYY-MM-DD), church, body, pinned   and   title, date, time, place, church, description.
+  Paste the two links into CONFIG.feeds in the district index.html.
+-->
+<style>
+  .district-strip{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center;padding:8px 16px;background:#e3f0fa;color:#14263a;font:600 14px/1.4 system-ui,sans-serif;border-bottom:1px solid #d8e5ef}
+  .district-strip a{color:#1c6fb5;font-weight:700}
+</style>
+<div class="district-strip">
+  Tubod SDA Church is part of the Isabel–Merida District.
+  <a href="https://YOUR-DISTRICT-SITE-ADDRESS/">Visit the district website</a>
+  <a href="https://YOUR-DISTRICT-SITE-ADDRESS/#verify">Verify a member</a>
+</div>
