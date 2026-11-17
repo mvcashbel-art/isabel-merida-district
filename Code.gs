@@ -21,6 +21,23 @@ var SESSION_SECONDS = 6 * 60 * 60;
 var HASH_ROUNDS = 400;
 var LOOKUPS_PER_HOUR = 60;
 
+/** Real church names, keyed by the number in the church code (I02, I03 ...). The codes never change, so member IDs stay valid. */
+var NAMED_ISABEL_ = { 2: 'Apale SDA Church', 3: 'Isabel SDA Church', 4: 'Simangan SDA Church',
+  5: 'Puting Bato SDA Church', 6: 'Bantigue SDA Church', 7: 'San Francisco SDA Church' };
+
+/** Run once after updating: renames the church rows already in the Churches tab. Only the name column changes. */
+function renameChurches() {
+  var cs = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Churches');
+  var rows = cs.getRange(2, 1, Math.max(cs.getLastRow() - 1, 1), 3).getValues();
+  var changed = 0;
+  rows.forEach(function (r, k) {
+    var m = /^I(\d\d)$/.exec(String(r[0]));
+    var nm = m && NAMED_ISABEL_[parseInt(m[1], 10)];
+    if (nm && r[1] !== nm) { cs.getRange(k + 2, 2).setValue(nm); changed++; }
+  });
+  Logger.log('Renamed ' + changed + ' church(es).');
+}
+
 /* ---------------------------------------------------------------- setup */
 
 /** Run once from the Apps Script editor. Read the temporary admin password in View > Logs. */
@@ -35,7 +52,7 @@ function setup() {
   var cs = ss.getSheetByName('Churches');
   if (cs.getLastRow() < 2) {
     var rows = [['TBD', 'Tubod SDA Church', 'Isabel']];
-    for (var i = 2; i <= 12; i++) rows.push(['I' + ('0' + i).slice(-2), 'Isabel Church ' + i, 'Isabel']);
+    for (var i = 2; i <= 12; i++) rows.push(['I' + ('0' + i).slice(-2), NAMED_ISABEL_[i] || 'Isabel Church ' + i, 'Isabel']);
     for (var j = 1; j <= 3; j++) rows.push(['M' + ('0' + j).slice(-2), 'Merida Church ' + j, 'Merida']);
     cs.getRange(2, 1, rows.length, 3).setValues(rows);
   }
