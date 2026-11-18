@@ -177,6 +177,7 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
         <input type="search" id="q" placeholder="Search name, ID or barangay" aria-label="Search members">
         <select id="fChurch" aria-label="Church" hidden></select>
         <button class="btn" id="addBtn" type="button">Add member</button>
+        <button class="btn" id="importBtn" type="button">Import from a church</button>
         <button class="btn ghost" id="csvBtn" type="button">Export CSV</button>
       </div>
       <div class="tablebox">
@@ -356,6 +357,7 @@ $('#fChurch').addEventListener('change', e => { ui.church = e.target.value; rend
 $('#rows').addEventListener('click', e => { const r = e.target.closest('tr[data-id]'); if (r) openMember(r.dataset.id); });
 $('#rows').addEventListener('keydown', e => { if (e.key === 'Enter') { const r = e.target.closest('tr[data-id]'); if (r) openMember(r.dataset.id); } });
 $('#addBtn').addEventListener('click', () => openMember(null));
+$('#importBtn').addEventListener('click', openImport);
 
 /* CSV export */
 $('#csvBtn').addEventListener('click', async () => {
@@ -371,6 +373,168 @@ $('#csvBtn').addEventListener('click', async () => {
     document.body.appendChild(a); a.click(); a.remove(); toast('CSV downloaded. Keep it private.');
   } catch (e) { navigator.clipboard && navigator.clipboard.writeText(csv).then(() => toast('CSV copied to clipboard.')); }
 });
+
+/* ---------------- import from a church ----------------
+   Reads the member list a church downloads from its own website (the
+   "Download member list" CSV) and adds those people to the registry.
+   It only CREATES members here; it never touches the church's own site.
+   Uses the normal saveMember + setStatus, so clerks stay limited to their
+   own church and every add is logged. No one is duplicated on a re-import. */
+function parseCSV(text) {
+  text = String(text || '').replace(/^﻿/, '');
+  const rows = []; let row = [], field = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else q = false; } else field += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(field); field = ''; }
+    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+    else if (c !== '\r') field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(c => String(c).trim() !== ''));
+}
+function splitName(full) {
+  const s = String(full || '').replace(/\s+/g, ' ').trim();
+  if (s.indexOf(',') >= 0) { /* "Last, First Middle" */
+    const last = s.slice(0, s.indexOf(',')).trim();
+    const rest = s.slice(s.indexOf(',') + 1).trim().split(' ').filter(Boolean);
+    return { firstName: rest[0] || '', middleName: rest.slice(1).join(' '), lastName: last };
+  }
+  const p = s.split(' ').filter(Boolean);
+  if (!p[0]) return { firstName: '', middleName: '', lastName: '' };
+  if (p.length === 1) return { firstName: p[0], middleName: '', lastName: p[0] };
+  if (p.length === 2) return { firstName: p[0], middleName: '', lastName: p[1] };
+  return { firstName: p[0], middleName: p.slice(1, -1).join(' '), lastName: p[p.length - 1] };
+}
+function mapStatus(raw) {
+  const s = String(raw || '').trim().toLowerCase();
+  if (!s) return 'active';
+  if (STATUS[s]) return s;
+  if (s.startsWith('active')) return 'active';
+  if (s.startsWith('inact')) return 'inactive';
+  if (s.startsWith('backslid')) return 'inactive';
+  if (s.startsWith('offshoot') || s.startsWith('breakaway')) return 'breakaway';
+  if (s.startsWith('transfer')) return 'transferred';
+  if (s.startsWith('drop')) return 'dropped';
+  if (s.startsWith('decease') || s.startsWith('dead')) return 'deceased';
+  return 'active';
+}
+function colIndex(header, names) {
+  const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const H = header.map(norm);
+  for (const n of names) { const i = H.indexOf(norm(n)); if (i >= 0) return i; }
+  for (const n of names) { const nn = norm(n); const i = H.findIndex(h => h && h.indexOf(nn) === 0); if (i >= 0) return i; }
+  return -1;
+}
+function mapImportRows(rows) {
+  if (rows.length < 2) return [];
+  const h = rows[0], body = rows.slice(1);
+  const iName = colIndex(h, ['Name', 'Full name']);
+  const iLast = colIndex(h, ['Last name', 'lastName', 'Apelyido']);
+  const iFirst = colIndex(h, ['First name', 'firstName']);
+  const iMid = colIndex(h, ['Middle name', 'middleName']);
+  const iStat = colIndex(h, ['Status']);
+  const iSDate = colIndex(h, ['Status date', 'statusDate']);
+  const iSNote = colIndex(h, ['Status note', 'statusNote']);
+  const iBapt = colIndex(h, ['Baptism date', 'baptismDate']);
+  const iBday = colIndex(h, ['Birthday (month-day)', 'Birthday', 'birthdate']);
+  const iSince = colIndex(h, ['Member since', 'since']);
+  const g = (r, i) => i >= 0 ? String(r[i] == null ? '' : r[i]).trim() : '';
+  const okDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s);
+  return body.map(r => {
+    let fn = g(r, iFirst), mn = g(r, iMid), ln = g(r, iLast);
+    if (!fn && !ln && iName >= 0) { const s = splitName(g(r, iName)); fn = s.firstName; mn = s.middleName; ln = s.lastName; }
+    const notes = [];
+    if (g(r, iBday)) notes.push('Birthday ' + g(r, iBday));
+    if (g(r, iSince)) notes.push('Member since ' + g(r, iSince));
+    return {
+      firstName: fn, middleName: mn, lastName: ln,
+      status: mapStatus(g(r, iStat)),
+      statusDate: okDate(g(r, iSDate)) ? g(r, iSDate) : '',
+      statusNote: g(r, iSNote),
+      baptismDate: okDate(g(r, iBapt)) ? g(r, iBapt) : '',
+      notes: notes.join(' · ')
+    };
+  }).filter(m => m.firstName || m.lastName);
+}
+let IMPORT = [];
+function openImport() {
+  const churchPick = me.role === 'district'
+    ? `<label style="display:grid;gap:4px;font-weight:600;font-size:.9rem">Which church are these members from?<select id="impChurch">${churches.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('')}</select></label>`
+    : `<p class="muted">Members will be added to <b>${esc(churchName(me.church))}</b>.</p>`;
+  $('#dlgBody').innerHTML = `
+    <div><h3>Import members from a church</h3>
+      <p class="muted">On the church's own website, an admin taps <b>Download member list</b>. Choose that CSV file here, review the list, then add everyone to the registry. People already registered are skipped automatically.</p></div>
+    ${churchPick}
+    <label class="btn" style="justify-self:start;cursor:pointer">Choose CSV file<input type="file" id="impFile" accept=".csv,text/csv,text/plain" hidden></label>
+    <p class="muted" id="impHint" style="margin:0">No file chosen yet.</p>
+    <div id="impPreview"></div>
+    <div class="err" id="impErr" role="alert"></div>
+    <div class="actions"><button class="btn" type="button" id="impRun" disabled>Add to registry</button><button class="btn ghost" type="button" id="impClose">Close</button></div>
+    <div class="muted" id="impResult" style="white-space:pre-line"></div>`;
+  IMPORT = [];
+  $('#impClose').onclick = () => $('#dlg').close();
+  $('#impFile').onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      try {
+        IMPORT = mapImportRows(parseCSV(rd.result));
+        $('#impHint').textContent = f.name + ' — ' + IMPORT.length + ' member' + (IMPORT.length === 1 ? '' : 's') + ' found.';
+        renderImportPreview();
+      } catch (err) { $('#impErr').textContent = 'Could not read that file. Make sure it is the CSV from the church website.'; }
+    };
+    rd.readAsText(f);
+  };
+  $('#impRun').onclick = runImport;
+  $('#dlg').showModal();
+}
+function renderImportPreview() {
+  const box = $('#impPreview');
+  if (!IMPORT.length) { box.innerHTML = '<p class="muted">No members found in that file.</p>'; $('#impRun').disabled = true; return; }
+  box.innerHTML = `<p class="muted" style="margin:10px 0 6px">Review and fix names if needed. Untick anyone you don't want to add. Birthdate, sex and barangay aren't in the church file — you can fill those in later by opening each member.</p>
+    <div class="tablebox" style="max-height:46vh;overflow:auto"><table><thead><tr><th></th><th>First name</th><th>Middle</th><th>Last name</th><th>Status</th></tr></thead><tbody>${
+    IMPORT.map((m, i) => `<tr>
+      <td><input type="checkbox" class="imk" data-i="${i}" checked aria-label="Include"></td>
+      <td><input class="imf" data-i="${i}" data-k="firstName" value="${esc(m.firstName)}" style="width:100%"></td>
+      <td><input class="imf" data-i="${i}" data-k="middleName" value="${esc(m.middleName)}" style="width:100%"></td>
+      <td><input class="imf" data-i="${i}" data-k="lastName" value="${esc(m.lastName)}" style="width:100%"></td>
+      <td><select class="imf" data-i="${i}" data-k="status">${ORDER.map(s => `<option value="${s}"${m.status === s ? ' selected' : ''}>${STATUS[s].label}</option>`).join('')}</select></td>
+    </tr>`).join('')}</tbody></table></div>`;
+  box.querySelectorAll('.imf').forEach(el => el.addEventListener('input', e => { IMPORT[+e.target.dataset.i][e.target.dataset.k] = e.target.value; }));
+  box.querySelectorAll('.imk').forEach(el => el.addEventListener('change', e => { IMPORT[+e.target.dataset.i]._skip = !e.target.checked; }));
+  $('#impRun').disabled = false;
+}
+async function runImport() {
+  const church = me.role === 'district' ? $('#impChurch').value : me.church;
+  const list = IMPORT.filter(m => !m._skip && (m.firstName.trim() || m.lastName.trim()));
+  if (!list.length) { $('#impErr').textContent = 'No members ticked to add.'; return; }
+  $('#impErr').textContent = ''; $('#impRun').disabled = true; $('#impClose').disabled = true;
+  let added = 0, skipped = 0, failed = 0; const problems = [];
+  for (let i = 0; i < list.length; i++) {
+    const m = list[i];
+    const who = (m.firstName + ' ' + m.lastName).trim();
+    $('#impResult').textContent = 'Working… ' + (i + 1) + ' of ' + list.length + ' (' + who + ')';
+    if (!m.firstName.trim() || !m.lastName.trim()) { failed++; problems.push(who + ' — needs a first and last name'); continue; }
+    try {
+      const member = { firstName: m.firstName.trim(), middleName: (m.middleName || '').trim(), lastName: m.lastName.trim(), baptismDate: m.baptismDate || '', notes: m.notes || '' };
+      if (me.role === 'district') member.church = church;
+      const r = await api('saveMember', { member, force: false });
+      added++;
+      if (m.status && m.status !== 'active' && r.member && r.member.memberId) {
+        try { await api('setStatus', { memberId: r.member.memberId, status: m.status, statusDate: m.statusDate || '', note: m.statusNote || '' }); } catch (e) {}
+      }
+    } catch (err) {
+      if (err.code === 'duplicate') { skipped++; } else { failed++; problems.push(who + ' — ' + err.message); }
+    }
+  }
+  await loadMembers();
+  $('#impResult').textContent = `Done. Added ${added}, already-registered skipped ${skipped}` + (failed ? `, could not add ${failed}` : '') + '.'
+    + (problems.length ? '\n\n' + problems.slice(0, 8).join('\n') : '');
+  $('#impClose').disabled = false; $('#impClose').textContent = 'Done';
+  toast(added ? ('Added ' + added + ' member' + (added === 1 ? '' : 's') + '.') : 'No new members added.');
+}
 
 /* ---------------- member dialog ---------------- */
 function qrSvg(text) {
