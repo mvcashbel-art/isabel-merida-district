@@ -114,6 +114,8 @@ function route_(b) {
     case 'setStatus': return withLock_(function () { return setStatus_(u, b); });
     case 'history': return history_(u, b);
     case 'officerLookup': return officerLookup_(u, b);
+    case 'getSheetId': requireDistrict_(u); return getSheetId_(b);
+    case 'previewFromSheet': requireDistrict_(u); return previewFromSheet_(u, b);
     case 'logExport': log_(u.username, 'export', '', String(Number(b.count) || 0) + ' rows'); return { ok: true };
     case 'listUsers': requireDistrict_(u); return listUsers_();
     case 'saveUser': requireDistrict_(u); return withLock_(function () { return saveUser_(u, b); });
@@ -381,6 +383,91 @@ function officerLookup_(u, b) {
   });
   log_(u.username, 'lookup', '', clean_(b.lastName, 40) + ' ' + clean_(b.firstName, 40) + ' -> ' + hits.length);
   return { ok: true, results: hits };
+}
+
+/* ---------- read a church's own Google Sheet directly (district only) ----------
+   Reads the "Members" tab of a church website's Sheet and returns the people
+   mapped to registry fields for review. It only READS; nothing is written to
+   the church's Sheet, and nothing is added to the registry until the officer
+   confirms (that goes through the normal saveMember). The script can only open
+   a Sheet its own Google account has access to. */
+function sheetId_(s) {
+  s = String(s || '').trim();
+  var m = /\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/.exec(s);
+  if (m) return m[1];
+  return /^[a-zA-Z0-9_-]{20,}$/.test(s) ? s : '';
+}
+function splitName_(full) {
+  var s = String(full || '').replace(/\s+/g, ' ').trim();
+  if (s.indexOf(',') >= 0) {
+    var last = s.slice(0, s.indexOf(',')).trim();
+    var rest = s.slice(s.indexOf(',') + 1).trim().split(' ').filter(function (x) { return x; });
+    return { firstName: rest[0] || '', middleName: rest.slice(1).join(' '), lastName: last };
+  }
+  var p = s.split(' ').filter(function (x) { return x; });
+  if (!p[0]) return { firstName: '', middleName: '', lastName: '' };
+  if (p.length === 1) return { firstName: p[0], middleName: '', lastName: p[0] };
+  if (p.length === 2) return { firstName: p[0], middleName: '', lastName: p[1] };
+  return { firstName: p[0], middleName: p.slice(1, -1).join(' '), lastName: p[p.length - 1] };
+}
+function mapStatus_(raw) {
+  var s = String(raw || '').trim().toLowerCase();
+  if (!s) return 'active';
+  if (STATUSES.indexOf(s) >= 0) return s;
+  if (s.indexOf('active') === 0) return 'active';
+  if (s.indexOf('inact') === 0) return 'inactive';
+  if (s.indexOf('backslid') === 0) return 'inactive';
+  if (s.indexOf('offshoot') === 0 || s.indexOf('breakaway') === 0) return 'breakaway';
+  if (s.indexOf('transfer') === 0) return 'transferred';
+  if (s.indexOf('drop') === 0) return 'dropped';
+  if (s.indexOf('decease') === 0 || s.indexOf('dead') === 0) return 'deceased';
+  return 'active';
+}
+function getSheetId_(b) {
+  var church = clean_(b.church, 10);
+  if (!church || !churchExists_(church)) fail_('Choose the church.');
+  var saved = PropertiesService.getScriptProperties().getProperty('sheet_' + church) || '';
+  return { ok: true, sheetId: saved };
+}
+function previewFromSheet_(u, b) {
+  var church = clean_(b.church, 10);
+  if (!church || !churchExists_(church)) fail_('Choose the church.');
+  var sid = sheetId_(b.sheetId);
+  if (!sid) fail_('Paste the church Google Sheet link or ID.');
+  var ss;
+  try { ss = SpreadsheetApp.openById(sid); }
+  catch (e) { fail_('Could not open that Sheet. Check the link, and make sure this registry account is allowed to open it.', 'sheet'); }
+  var sh = ss.getSheetByName('Members');
+  if (!sh) fail_('That Sheet has no tab named "Members".', 'sheet');
+  var values = sh.getDataRange().getValues();
+  if (values.length < 2) { return { ok: true, members: [], sheetId: sid }; }
+  var col = {};
+  values[0].forEach(function (h, i) { col[String(h).trim().toLowerCase()] = i; });
+  var get = function (r, name) { var i = col[name]; return i === undefined ? '' : String(r[i] == null ? '' : r[i]).trim(); };
+  var okDate = function (s) { return /^\d{4}-\d{2}-\d{2}$/.test(s); };
+  var out = [];
+  for (var k = 1; k < values.length; k++) {
+    var r = values[k];
+    if (get(r, 'access') === 'pending') continue; /* not an approved member yet */
+    var nm = splitName_(get(r, 'name'));
+    if (!nm.firstName && !nm.lastName) continue;
+    var notes = [];
+    if (get(r, 'bday')) notes.push('Birthday ' + get(r, 'bday'));
+    if (get(r, 'since')) notes.push('Member since ' + get(r, 'since'));
+    out.push({
+      firstName: nm.firstName, middleName: nm.middleName, lastName: nm.lastName,
+      sex: '', birthdate: '', barangay: '',
+      phone: clean_(get(r, 'phone'), 30),
+      baptismDate: okDate(get(r, 'baptdate')) ? get(r, 'baptdate') : '',
+      status: mapStatus_(get(r, 'mstatus')),
+      statusDate: okDate(get(r, 'mstatusdate')) ? get(r, 'mstatusdate') : '',
+      statusNote: clean_(get(r, 'mstatusnote'), 300),
+      notes: notes.join(' · ')
+    });
+  }
+  try { PropertiesService.getScriptProperties().setProperty('sheet_' + church, sid); } catch (e) {}
+  log_(u.username, 'sheet-read', '', church + ' -> ' + out.length);
+  return { ok: true, members: out, sheetId: sid };
 }
 
 /* ---------------------------------------------------------------- public check (no sign-in) */

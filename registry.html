@@ -463,18 +463,48 @@ function openImport() {
   const churchPick = me.role === 'district'
     ? `<label style="display:grid;gap:4px;font-weight:600;font-size:.9rem">Which church are these members from?<select id="impChurch">${churches.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('')}</select></label>`
     : `<p class="muted">Members will be added to <b>${esc(churchName(me.church))}</b>.</p>`;
+  const sheetBlock = me.role === 'district' ? `
+    <div style="border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px">
+      <b>Option 1 — connect the church's Google Sheet (easiest)</b>
+      <p class="muted" style="margin:0">Paste the church website's Google Sheet link. The registry reads its member list directly — no download needed. Works for sheets this registry account can open.</p>
+      <input id="impSheet" placeholder="https://docs.google.com/spreadsheets/d/…  (or the ID)" style="width:100%" autocapitalize="off" spellcheck="false">
+      <button class="btn" type="button" id="impLoadSheet" style="justify-self:start">Load from Sheet</button>
+    </div>
+    <div style="text-align:center;color:var(--muted);font-size:.85rem">— or —</div>` : '';
   $('#dlgBody').innerHTML = `
     <div><h3>Import members from a church</h3>
-      <p class="muted">On the church's own website, an admin taps <b>Download member list</b>. Choose that CSV file here, review the list, then add everyone to the registry. People already registered are skipped automatically.</p></div>
+      <p class="muted">Bring a church's members into the registry. Review the list, then add everyone. People already registered are skipped automatically.</p></div>
     ${churchPick}
-    <label class="btn" style="justify-self:start;cursor:pointer">Choose CSV file<input type="file" id="impFile" accept=".csv,text/csv,text/plain" hidden></label>
-    <p class="muted" id="impHint" style="margin:0">No file chosen yet.</p>
+    ${sheetBlock}
+    <div style="display:grid;gap:6px">
+      ${me.role === 'district' ? '<b>Option 2 — upload the downloaded CSV</b>' : ''}
+      <p class="muted" style="margin:0">On the church's own website, an admin taps <b>Download member list</b>, then choose that file here.</p>
+      <label class="btn" style="justify-self:start;cursor:pointer">Choose CSV file<input type="file" id="impFile" accept=".csv,text/csv,text/plain" hidden></label>
+    </div>
+    <p class="muted" id="impHint" style="margin:0">Nothing loaded yet.</p>
     <div id="impPreview"></div>
     <div class="err" id="impErr" role="alert"></div>
     <div class="actions"><button class="btn" type="button" id="impRun" disabled>Add to registry</button><button class="btn ghost" type="button" id="impClose">Close</button></div>
     <div class="muted" id="impResult" style="white-space:pre-line"></div>`;
   IMPORT = [];
   $('#impClose').onclick = () => $('#dlg').close();
+  if (me.role === 'district') {
+    const prefill = () => { api('getSheetId', { church: $('#impChurch').value }).then(r => { if (r.sheetId && !$('#impSheet').value) $('#impSheet').value = r.sheetId; }).catch(() => {}); };
+    prefill();
+    const chSel = $('#impChurch'); if (chSel) chSel.onchange = () => { $('#impSheet').value = ''; prefill(); };
+    $('#impLoadSheet').onclick = async () => {
+      const sheetId = $('#impSheet').value.trim();
+      if (!sheetId) { $('#impErr').textContent = 'Paste the church Google Sheet link first.'; return; }
+      $('#impErr').textContent = ''; $('#impLoadSheet').disabled = true; $('#impHint').textContent = 'Reading the Sheet…';
+      try {
+        const r = await api('previewFromSheet', { church: $('#impChurch').value, sheetId });
+        IMPORT = r.members || [];
+        $('#impHint').textContent = IMPORT.length + ' member' + (IMPORT.length === 1 ? '' : 's') + ' found in the Sheet.';
+        renderImportPreview();
+      } catch (err) { $('#impErr').textContent = err.message; $('#impHint').textContent = ''; }
+      $('#impLoadSheet').disabled = false;
+    };
+  }
   $('#impFile').onchange = e => {
     const f = e.target.files[0]; if (!f) return;
     const rd = new FileReader();
@@ -751,7 +781,11 @@ async function demoApi(b) {
       S.users.push({ username: un, name: b.name, role: b.role, church: b.role === 'clerk' ? b.church : '', active: 'yes', mustChange: 'yes', pw: 'x' }); return { ok: true, tempPassword: 'Demo1234ab' };
     }
     case 'resetPassword': return { ok: true, tempPassword: 'Demo1234ab' };
-    default: return fail('Unknown action: ' + b.action);
+    case 'getSheetId': return { ok: true, sheetId: '' };
+    case 'previewFromSheet': return { ok: true, members: [
+      { firstName: 'Demo', middleName: '', lastName: 'FromSheet', sex: '', birthdate: '', barangay: '', phone: '', baptismDate: '', status: 'active', statusDate: '', statusNote: '', notes: 'Birthday 01-01' },
+      { firstName: 'Sample', middleName: 'A', lastName: 'Inactive', sex: '', birthdate: '', barangay: '', phone: '', baptismDate: '', status: 'inactive', statusDate: '2026-10-01', statusNote: 'moved', notes: '' }
+    ], sheetId: b.sheetId };
   }
 }
 if (DEMO) $('#demoBar').hidden = false;
