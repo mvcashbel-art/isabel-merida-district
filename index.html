@@ -306,8 +306,21 @@ nav.links a.on{background:var(--blue-soft);color:var(--ink)}
   .bar{gap:6px}
 }
 
+/* phone header: one row */
+@media(max-width:560px){
+  .brand{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.92rem;gap:8px}
+  .brand .mark{width:30px;height:30px;flex:none}
+  .icon-btn{width:32px;height:32px}.icon-btn svg{width:17px;height:17px}
+  .lang{padding:4px 9px;font-size:.78rem}
+  .hbtns{gap:4px;flex:none}
+  .bar{gap:6px;flex-wrap:nowrap}
+}
+/* hero title: plain colour, no clipped gradient (paints reliably) */
+.hero h1 .w{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--ink)}
+.hero h1 .w:last-child{color:var(--blue)}
+
 /* desktop header: one line, nothing cut off */
-.brand{white-space:nowrap;flex:none}
+@media(min-width:561px){.brand{white-space:nowrap;flex:none}}
 @media(min-width:860px){
   header.top .wrap.bar{max-width:1320px;gap:18px}
   nav.links{flex:1 1 auto;min-width:0;justify-content:center;gap:2px}
