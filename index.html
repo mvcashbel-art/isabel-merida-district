@@ -260,10 +260,10 @@ nav.links a.on{background:var(--blue-soft);color:var(--ink)}
 :root[data-theme="dark"] .map .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.8)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .map .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.8)}}
 .pin-wrap{background:none;border:0}
-.pin{display:block;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--teal);border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.4);position:relative}
-.pin.merida{background:var(--coral)}
-.pin::after{content:"";position:absolute;inset:4px;border-radius:50%;background:#fff}
-.pin.live{animation:pinPulse 1.8s infinite}
+.mpin{display:block;width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--teal);border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,.4);position:relative}
+.mpin.merida{background:var(--coral)}
+.mpin::after{content:"";position:absolute;inset:4px;border-radius:50%;background:#fff}
+.mpin.live{animation:pinPulse 1.8s infinite}
 @keyframes pinPulse{0%{box-shadow:0 4px 10px rgba(0,0,0,.4),0 0 0 0 rgba(14,159,154,.6)}70%{box-shadow:0 4px 10px rgba(0,0,0,.4),0 0 0 14px rgba(14,159,154,0)}100%{box-shadow:0 4px 10px rgba(0,0,0,.4),0 0 0 0 rgba(14,159,154,0)}}
 
 /* gallery */
@@ -306,7 +306,7 @@ nav.links a.on{background:var(--blue-soft);color:var(--ink)}
   .bar{gap:6px}
 }
 @media(prefers-reduced-motion:reduce){
-  .aurora i,.aurora::before,.live i,.pin.live{animation:none}
+  .aurora i,.aurora::before,.live i,.mpin.live{animation:none}
   .hero h1 .w{animation:none;opacity:1;transform:none}
   .rv{opacity:1;transform:none;transition:none}
   .church:hover,.card:hover,.stat:hover,.btn:hover{transform:none}
@@ -1009,7 +1009,7 @@ function updateMap() {
   filtered().forEach(c => {
     const lat = cLat(c), lng = cLng(c); if (lat == null || lng == null) return;
     const i = state.churches.indexOf(c), where = [c.barangay, c.municipality + ', Leyte'].filter(Boolean).join(', ');
-    const icon = L.divIcon({ className: 'pin-wrap', html: `<span class="pin ${c.municipality.toLowerCase()}${worshipToday(c) ? ' live' : ''}"></span>`, iconSize: [26, 34], iconAnchor: [13, 30], popupAnchor: [0, -28] });
+    const icon = L.divIcon({ className: 'pin-wrap', html: `<span class="mpin ${c.municipality.toLowerCase()}${worshipToday(c) ? ' live' : ''}"></span>`, iconSize: [26, 34], iconAnchor: [13, 30], popupAnchor: [0, -28] });
     L.marker([lat, lng], { icon, title: c.name, alt: c.name }).addTo(mp.layer)
       .bindPopup(`<b>${esc(c.name)}</b><br>${esc(where)}<br><button class="btn primary sm" type="button" data-i="${i}">${esc(T('details'))}</button>`);
     pts.push([lat, lng]);
