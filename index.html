@@ -296,6 +296,15 @@ nav.links a.on{background:var(--blue-soft);color:var(--ink)}
 .rv{opacity:0;transform:translateY(20px);transition:opacity .65s var(--ease),transform .65s var(--ease);transition-delay:var(--d,0s)}
 .rv.in{opacity:1;transform:none}
 
+
+/* phone fixes */
+.wrap.hero{padding-left:20px;padding-right:20px}
+@media(max-width:560px){
+  .brand{font-size:1rem}.brand .mark{width:34px;height:34px}
+  .icon-btn{width:34px;height:34px}.icon-btn svg{width:18px;height:18px}
+  .lang{padding:5px 11px;font-size:.82rem}.hbtns{gap:6px}
+  .bar{gap:6px}
+}
 @media(prefers-reduced-motion:reduce){
   .aurora i,.aurora::before,.live i,.pin.live{animation:none}
   .hero h1 .w{animation:none;opacity:1;transform:none}
