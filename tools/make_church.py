@@ -96,6 +96,10 @@ wr('Code.gs', s)
 for n in ('logo-mark.png', 'icon-192.png', 'icon-512.png', 'og-image.jpg'):
     shutil.copyfile(os.path.join(a.template, n), os.path.join(dest, n))
 
+# shared polish layer (colour, motion, dark mode, verse of the day)
+import subprocess
+subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cool_layer.py'), dest])
+
 # leftovers check
 left = []
 for n in os.listdir(dest):
