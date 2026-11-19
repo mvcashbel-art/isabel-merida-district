@@ -318,6 +318,7 @@ nav.links a.on{background:var(--blue-soft);color:var(--ink)}
   nav.links{flex:0 0 100%;order:3}
   nav.links a{padding:5px 11px;font-size:.88rem}
 }
+@media(max-width:560px){.event .meta .sep{display:none}.event .meta{gap:2px 12px}}
 /* hero title: plain colour, no clipped gradient (paints reliably) */
 .hero h1 .w{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--ink)}
 .hero h1 .w:last-child{color:var(--blue)}
@@ -839,7 +840,7 @@ function renderEvents() {
   $('#eventList').innerHTML = list.length ? list.map((e, i) => `<article class="event">
       <div class="dateblock"><span>${esc(fmt(e._d, { month: 'short' }))}</span><b>${e._d.getDate()}</b></div>
       <div><h3>${esc(e.title)}</h3>
-        <div class="meta">${[e.time, e.place, e.church || T('whole')].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('<span>·</span>')}</div>
+        <div class="meta">${[e.time, e.place, e.church || T('whole')].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('<span class="sep">·</span>')}</div>
         ${e.description ? `<p>${esc(e.description)}</p>` : ''}<button class="cal" type="button" data-ev="${i}">${esc(T('cal_add'))}</button></div></article>`).join('')
     : `<div class="empty">${esc(T('events_empty'))}</div>`;
 }
@@ -1167,7 +1168,7 @@ function initFx() {
   paintTheme(); loadGallery(); tickCountdown(); setInterval(tickCountdown, 1000);
   const links = [...document.querySelectorAll('nav.links a')];
   if ('IntersectionObserver' in window) {
-    const o = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + en.target.id)); }), { rootMargin: '-35% 0px -60% 0px' });
+    const o = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) links.forEach(a => { const on = a.getAttribute('href') === '#' + en.target.id; a.classList.toggle('on', on); if (on) { const n = a.parentElement; if (n && n.scrollWidth > n.clientWidth) n.scrollTo({ left: a.offsetLeft - (n.clientWidth - a.offsetWidth) / 2, behavior: 'smooth' }); } }); }), { rootMargin: '-35% 0px -60% 0px' });
     links.forEach(a => { const s = document.querySelector(a.getAttribute('href')); if (s) o.observe(s); });
     const mo = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { ensureMap(); mo.disconnect(); } }, { rootMargin: '400px' }); mo.observe($('#map'));
   } else ensureMap();
