@@ -22,6 +22,6 @@ for d in sys.argv[1:]:
     w = open(sp, encoding='utf-8').read()
     if 'cool.js' not in w:
         w = w.replace("'./manifest.json',", "'./manifest.json', './cool.css', './cool.js',", 1)
-        w = re.sub(r"const VERSION = '([a-z0-9-]+)-v(\d+)';", lambda m: "const VERSION = '%s-v%d';" % (m.group(1), int(m.group(2)) + 1), w, 1)
-        open(sp, 'w', encoding='utf-8', newline='\n').write(w)
+    w = re.sub(r"const VERSION = '([a-z0-9-]+)-v(\d+)';", lambda m: "const VERSION = '%s-v%d';" % (m.group(1), int(m.group(2)) + 1), w, count=1)
+    open(sp, 'w', encoding='utf-8', newline='\n').write(w)
     print('polished', d)

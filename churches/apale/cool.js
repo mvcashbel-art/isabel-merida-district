@@ -85,7 +85,7 @@ function mountVerse() {
   const side = $('#side'); if (!side || side.hidden) return;
   const sc = side.querySelector('#sabbathCard'); if (!sc || side.querySelector('#votd')) return;
   const { v, sab } = todays(), d = document.createElement('div');
-  d.className = 'card more votd'; d.id = 'votd'; d.setAttribute('data-notr', '');
+  d.className = 'card votd'; d.id = 'votd'; d.setAttribute('data-notr', '');
   d.innerHTML = '<h3>' + (sab ? 'Sabbath verse' : 'Verse of the day') + '</h3><p class="verse" lang="en">“' + v[1] + '”</p><p class="muted"><b>' + v[0] + '</b> · King James Version</p><div class="vb"><button type="button" data-cool="copy">Copy</button></div>';
   sc.insertAdjacentElement('afterend', d);
 }
