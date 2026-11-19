@@ -305,6 +305,14 @@ nav.links a.on{background:var(--blue-soft);color:var(--ink)}
   .lang{padding:5px 11px;font-size:.82rem}.hbtns{gap:6px}
   .bar{gap:6px}
 }
+
+/* desktop header: one line, nothing cut off */
+.brand{white-space:nowrap;flex:none}
+@media(min-width:860px){
+  header.top .wrap.bar{max-width:1320px;gap:18px}
+  nav.links{flex:1 1 auto;min-width:0;justify-content:center;gap:2px}
+  nav.links a{padding:6px 10px;font-size:.9rem}
+}
 @media(prefers-reduced-motion:reduce){
   .aurora i,.aurora::before,.live i,.mpin.live{animation:none}
   .hero h1 .w{animation:none;opacity:1;transform:none}
