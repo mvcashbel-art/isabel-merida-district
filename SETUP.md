@@ -43,3 +43,16 @@ Active, Inactive / lost contact, Left and joined a breakaway group, Transferred 
 
 ## Data privacy (Philippines)
 Religious affiliation is sensitive personal information under the Data Privacy Act of 2012. Before entering a person: tell them what is kept and why, and get their consent (a short signed form kept by the clerk is enough). Collect only what you need. Keep the list of people with access short. Let members ask to see or correct their record. Check with your conference office whether it already has a membership records policy you should follow. This is general guidance and not legal advice.
+
+## Photo gallery
+
+Put photos in the `gallery/` folder and list them in `gallery/gallery.json`, for example:
+
+```json
+[
+  { "src": "gallery/baptism-1.jpg", "caption": "Baptism at Tubod", "church": "Tubod SDA Church" },
+  { "src": "gallery/youth-rally.jpg", "caption": "Youth rally", "church": "" }
+]
+```
+
+Keep each photo under about 400 KB so the page stays fast on mobile data.
