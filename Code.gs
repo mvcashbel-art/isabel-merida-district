@@ -17,6 +17,8 @@ var MEMBER_COLS = ['memberId', 'lastName', 'firstName', 'middleName', 'sex', 'bi
 var USER_COLS = ['username', 'name', 'role', 'church', 'salt', 'hash', 'active', 'mustChange', 'createdAt'];
 var CHURCH_COLS = ['code', 'name', 'municipality'];
 var LOG_COLS = ['time', 'user', 'action', 'memberId', 'detail'];
+/** District announcements. church = '' for the whole district, or a church code (TBD, I02 ...). */
+var NEWS_COLS = ['id', 'title', 'body', 'date', 'church', 'pinned', 'createdAt', 'createdBy'];
 var SESSION_SECONDS = 6 * 60 * 60;
 var HASH_ROUNDS = 400;
 var LOOKUPS_PER_HOUR = 60;
@@ -102,6 +104,7 @@ function route_(b) {
   var a = String(b.action || '');
   if (a === 'login') return login_(b);
   if (a === 'publicVerify') return publicVerify_(b);
+  if (a === 'publicAnnouncements') return publicAnnouncements_();
   var u = session_(b.token);
   if (a === 'logout') { CacheService.getScriptCache().remove('s_' + b.token); return { ok: true }; }
   if (a === 'me') return { ok: true, user: publicUser_(u) };
@@ -117,6 +120,9 @@ function route_(b) {
     case 'getSheetId': requireDistrict_(u); return getSheetId_(b);
     case 'previewFromSheet': requireDistrict_(u); return previewFromSheet_(u, b);
     case 'logExport': log_(u.username, 'export', '', String(Number(b.count) || 0) + ' rows'); return { ok: true };
+    case 'listNews': requireDistrict_(u); return listNews_();
+    case 'saveNews': requireDistrict_(u); return withLock_(function () { return saveNews_(u, b); });
+    case 'deleteNews': requireDistrict_(u); return withLock_(function () { return deleteNews_(u, b); });
     case 'listUsers': requireDistrict_(u); return listUsers_();
     case 'saveUser': requireDistrict_(u); return withLock_(function () { return saveUser_(u, b); });
     case 'resetPassword': requireDistrict_(u); return withLock_(function () { return resetPassword_(u, b); });
@@ -553,4 +559,79 @@ function resetAdmin() {
   CacheService.getScriptCache().remove('lf_admin');
   log_('system', 'password-reset', '', 'admin');
   Logger.log('New temporary password for admin: ' + temp);
+}
+
+/* ---------------------------------------------------------------- district announcements */
+
+/** The News tab is created the first time it is needed, so nothing has to be re-run in setup(). */
+function newsSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), s = ss.getSheetByName('News');
+  if (!s) {
+    s = ss.insertSheet('News');
+    s.getRange(1, 1, 1, NEWS_COLS.length).setValues([NEWS_COLS]);
+    s.getRange(1, 1, s.getMaxRows(), NEWS_COLS.length).setNumberFormat('@');
+    s.setFrozenRows(1);
+  }
+  return s;
+}
+function newsRows_() {
+  var s = newsSheet_(), last = s.getLastRow();
+  if (last < 2) return [];
+  return s.getRange(2, 1, last - 1, NEWS_COLS.length).getValues().map(function (r, i) {
+    var o = { _row: i + 2 };
+    NEWS_COLS.forEach(function (c, j) { o[c] = norm_(r[j]); });
+    return o;
+  });
+}
+function newsOut_(o) {
+  return { id: o.id, title: o.title, body: o.body, date: o.date, church: o.church, pinned: o.pinned === 'yes' ? 'yes' : '', createdAt: o.createdAt, createdBy: o.createdBy };
+}
+function newsSort_(a, b) {
+  if ((a.pinned === 'yes') !== (b.pinned === 'yes')) return a.pinned === 'yes' ? -1 : 1;
+  return a.date < b.date ? 1 : a.date > b.date ? -1 : (a.createdAt < b.createdAt ? 1 : -1);
+}
+
+/** Public, no sign-in: only what officers chose to announce. No names, no member data. */
+function publicAnnouncements_() {
+  var names = {};
+  churches_().forEach(function (c) { names[c.code] = c.name; });
+  var list = newsRows_().sort(newsSort_).slice(0, 30).map(function (o) {
+    var x = newsOut_(o);
+    delete x.createdBy; delete x.createdAt;
+    x.churchName = x.church ? (names[x.church] || '') : '';
+    return x;
+  });
+  return { ok: true, announcements: list };
+}
+function listNews_() {
+  return { ok: true, news: newsRows_().sort(newsSort_).map(newsOut_) };
+}
+function saveNews_(u, b) {
+  var n = b.item || {};
+  var title = clean_(n.title, 140), body = clean_(n.body, 2000), date = clean_(n.date, 10) || today_();
+  var church = clean_(n.church, 10);
+  if (!title) fail_('Please write a title.');
+  if (!dateOk_(date)) fail_('The date is not valid.');
+  if (church && !churchExists_(church)) fail_('That church is not in the list.');
+  var rows = newsRows_(), cur = null;
+  if (n.id) { for (var i = 0; i < rows.length; i++) if (rows[i].id === n.id) cur = rows[i]; if (!cur) fail_('That announcement no longer exists.'); }
+  var rec = {
+    id: cur ? cur.id : 'N' + Utilities.getUuid().replace(/-/g, '').slice(0, 8),
+    title: title, body: body, date: date, church: church, pinned: n.pinned ? 'yes' : '',
+    createdAt: cur ? cur.createdAt : now_(), createdBy: cur ? cur.createdBy : u.username
+  };
+  if (cur) writeObj_('News', NEWS_COLS, cur._row, rec); else appendObj_('News', NEWS_COLS, rec);
+  log_(u.username, cur ? 'news-edit' : 'news-add', '', title);
+  return { ok: true, item: newsOut_(rec) };
+}
+function deleteNews_(u, b) {
+  var rows = newsRows_();
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].id === String(b.id || '')) {
+      newsSheet_().deleteRow(rows[i]._row);
+      log_(u.username, 'news-delete', '', rows[i].title);
+      return { ok: true };
+    }
+  }
+  fail_('That announcement no longer exists.');
 }

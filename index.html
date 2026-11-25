@@ -774,6 +774,21 @@ async function loadSheets() {
     if (s.announcements) { state.announcements = await get(s.announcements); any++; }
     if (s.events) { state.events = await get(s.events); any++; }
   } catch (e) { console.warn('Sheet load failed, showing built-in content.', e); }
+  /* announcements posted by district officers in the registry (public, no member data) */
+  if (CONFIG.registryApi) {
+    try {
+      let list = null;
+      try {
+        const res = await fetch(CONFIG.registryApi, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'publicAnnouncements' }), redirect: 'follow' });
+        const r = await res.json();
+        if (r && r.ok && Array.isArray(r.announcements)) { list = r.announcements; try { localStorage.setItem('district-ann', JSON.stringify(list)); } catch (e) {} }
+      } catch (e) { try { list = JSON.parse(localStorage.getItem('district-ann') || 'null'); } catch (e2) {} }
+      if (list && list.length) {
+        state.announcements = list.map(x => ({ title: x.title, body: x.body, date: x.date, pinned: x.pinned, church: x.churchName || '' }));
+        any++;
+      }
+    } catch (e) { console.warn('District announcements failed', e); }
+  }
   /* per-church feeds: merged in, tagged with the church name */
   for (const f of CONFIG.feeds || []) {
     for (const kind of ['announcements', 'events']) {

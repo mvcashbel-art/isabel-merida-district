@@ -103,6 +103,9 @@ subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.absp
 import subprocess
 subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cool_layer.py'), dest])
 
+# district announcements card ("From the district")
+subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'district_news_layer.py'), dest])
+
 # leftovers check
 left = []
 for n in os.listdir(dest):

@@ -168,6 +168,7 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="members" aria-selected="true">Members</button>
       <button class="tab" role="tab" data-tab="check" aria-selected="false">Check someone</button>
+      <button class="tab" role="tab" data-tab="news" aria-selected="false" id="newsTab" hidden>Announcements</button>
       <button class="tab" role="tab" data-tab="users" aria-selected="false" id="usersTab" hidden>Officers</button>
     </div>
 
@@ -200,6 +201,27 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
         </form>
         <div class="err" id="ckErr" role="alert"></div>
         <div id="ckOut" style="display:grid;gap:10px"></div>
+      </div>
+    </section>
+
+    <section id="tab-news" hidden>
+      <form class="panel" id="newsForm">
+        <h2 id="newsFormTitle">Post an announcement</h2>
+        <p class="muted">It shows on the district website and on the church websites you choose. Anyone can read it, so never put names, phone numbers or member details here.</p>
+        <div class="row2">
+          <label for="nTitle">Title<input id="nTitle" maxlength="140" required></label>
+          <label for="nDate">Date<input id="nDate" type="date"></label>
+          <label for="nChurch">Show on<select id="nChurch"></select></label>
+          <label for="nPinned" style="display:flex;align-items:center;gap:8px;align-self:end"><input id="nPinned" type="checkbox" style="width:auto"> Pin to the top</label>
+        </div>
+        <label for="nBody">Message<textarea id="nBody" rows="4" maxlength="2000"></textarea></label>
+        <div class="err" id="nErr" role="alert"></div>
+        <div class="actions"><button class="btn" type="submit">Post</button><button class="btn ghost" type="button" id="nReset">Clear form</button></div>
+      </form>
+      <div class="panel">
+        <h3>Posted announcements</h3>
+        <div class="tablebox"><table><thead><tr><th>Date</th><th>Title</th><th>Shown on</th><th></th></tr></thead><tbody id="newsRows"></tbody></table></div>
+        <div class="count" id="newsCount"></div>
       </div>
     </section>
 
@@ -300,6 +322,7 @@ async function enter() {
   const cl = await api('listChurches'); churches = cl.churches;
   if (me.role !== 'district') $('#whoText').textContent = me.name + ' · Clerk, ' + churchName(me.church);
   $('#usersTab').hidden = me.role !== 'district';
+  $('#newsTab').hidden = me.role !== 'district';
   $('#fChurch').hidden = me.role !== 'district';
   $('#fChurch').innerHTML = '<option value="all">All churches</option>' + churches.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
   $('#app').hidden = false; showTab('members'); await loadMembers(); resetIdle();
@@ -324,8 +347,9 @@ $('#signOut').addEventListener('click', () => endSession(''));
 /* ---------------- tabs ---------------- */
 function showTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
-  ['members', 'check', 'users'].forEach(n => { $('#tab-' + n).hidden = n !== name; });
+  ['members', 'check', 'news', 'users'].forEach(n => { $('#tab-' + n).hidden = n !== name; });
   if (name === 'users') loadUsers();
+  if (name === 'news') loadNews();
 }
 document.querySelector('.tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) showTab(b.dataset.tab); });
 
@@ -716,6 +740,40 @@ $('#userForm').addEventListener('submit', async e => {
   } catch (err) { $('#uErr').textContent = err.message; }
 });
 
+/* ---------------- district announcements (district only) ---------------- */
+let news = [];
+const todayStr = () => { const d = new Date(), z = n => ('0' + n).slice(-2); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); };
+async function loadNews() {
+  news = (await api('listNews')).news;
+  $('#nChurch').innerHTML = '<option value="">Whole district (every church)</option>' + churches.map(c => `<option value="${esc(c.code)}">${esc(c.name)} only</option>`).join('');
+  if (!$('#nDate').value) $('#nDate').value = todayStr();
+  $('#newsRows').innerHTML = news.map(n => `<tr style="cursor:default"><td style="white-space:nowrap">${esc(n.date)}</td><td>${n.pinned ? '📌 ' : ''}${esc(n.title)}</td><td>${esc(n.church ? churchName(n.church) : 'Whole district')}</td>
+    <td style="white-space:nowrap"><button class="btn ghost small" data-nedit="${esc(n.id)}" type="button">Edit</button> <button class="btn danger small" data-ndel="${esc(n.id)}" type="button">Delete</button></td></tr>`).join('');
+  $('#newsCount').textContent = news.length ? news.length + ' posted' : 'Nothing posted yet.';
+}
+let newsEditId = '';
+function clearNewsForm() { $('#newsForm').reset(); newsEditId = ''; $('#nDate').value = todayStr(); $('#newsFormTitle').textContent = 'Post an announcement'; $('#nErr').textContent = ''; }
+$('#nReset').addEventListener('click', clearNewsForm);
+$('#newsRows').addEventListener('click', async e => {
+  const ed = e.target.closest('[data-nedit]'), dl = e.target.closest('[data-ndel]');
+  if (ed) {
+    const n = news.find(x => x.id === ed.dataset.nedit); if (!n) return;
+    newsEditId = n.id; $('#nTitle').value = n.title; $('#nBody').value = n.body; $('#nDate').value = n.date; $('#nChurch').value = n.church; $('#nPinned').checked = !!n.pinned;
+    $('#newsFormTitle').textContent = 'Edit announcement'; $('#newsForm').scrollIntoView({ behavior: 'smooth' });
+  }
+  if (dl) {
+    const n = news.find(x => x.id === dl.dataset.ndel); if (!n || !confirm('Delete "' + n.title + '"? It will disappear from every website.')) return;
+    try { await api('deleteNews', { id: n.id }); toast('Deleted'); if (newsEditId === n.id) clearNewsForm(); loadNews(); } catch (err) { toast(err.message); }
+  }
+});
+$('#newsForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('#nErr').textContent = '';
+  try {
+    await api('saveNews', { item: { id: newsEditId, title: $('#nTitle').value, body: $('#nBody').value, date: $('#nDate').value, church: $('#nChurch').value, pinned: $('#nPinned').checked } });
+    toast(newsEditId ? 'Saved' : 'Posted. It will show on the websites within a few minutes.'); clearNewsForm(); loadNews();
+  } catch (err) { $('#nErr').textContent = err.message; }
+});
+
 /* ---------------- demo backend (only when API_URL is blank) ---------------- */
 const demoState = (() => {
   if (!DEMO) return null;
@@ -774,6 +832,11 @@ async function demoApi(b) {
       const hits = S.mem.filter(m => key(m.lastName) === key(b.lastName) && (!key(b.firstName) || key(m.firstName).startsWith(key(b.firstName))));
       return { ok: true, results: hits.map(m => ({ memberId: m.memberId, name: m.firstName + ' ' + m.lastName, church: S.ch.find(c => c[0] === m.church)[1], status: m.status, statusDate: m.statusDate })) };
     }
+    case 'listNews': return { ok: true, news: (S.news = S.news || []).map(n => ({ ...n })) };
+    case 'saveNews': { S.news = S.news || []; const it = b.item || {}; if (!String(it.title || '').trim()) return fail('Please write a title.');
+      const rec = { id: it.id || 'N' + Math.random().toString(36).slice(2, 10), title: it.title.trim(), body: it.body || '', date: it.date || '', church: it.church || '', pinned: it.pinned ? 'yes' : '' };
+      const i = S.news.findIndex(x => x.id === rec.id); if (i < 0) S.news.unshift(rec); else S.news[i] = rec; return { ok: true, item: rec }; }
+    case 'deleteNews': S.news = (S.news || []).filter(x => x.id !== b.id); return { ok: true };
     case 'listUsers': return { ok: true, users: S.users.map(({ pw, ...x }) => x) };
     case 'saveUser': {
       const un = String(b.username).toLowerCase(); const ex = S.users.find(x => x.username === un);
