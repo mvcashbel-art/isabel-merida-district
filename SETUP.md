@@ -60,3 +60,11 @@ Keep each photo under about 400 KB so the page stays fast on mobile data.
 ## District news feed (share an announcement on the district page)
 When a church leader writes an **Announcement**, a "Share on district page" box appears. Only announcements with that box ticked are sent to the district page (text only, never photos, comments or members).
 The church's Apps Script needs the updated `Code.gs` for this: paste it over the old one, then **Deploy > Manage deployments > pencil > New version > Deploy**. Until a church has done this, the district page simply shows nothing from that church.
+
+## District announcements (post once, show everywhere)
+
+District officers sign in to the registry, open **Announcements**, and post a title and message. Choose **Whole district** to show it on the district website and on every church site, or pick one church. Pinned posts stay at the top. Edit or Delete there and it changes everywhere.
+
+- Needs one step after updating: paste the new `Code.gs` into the registry's Apps Script and **Deploy > Manage deployments > Edit > New version**. A `News` tab is created in the registry sheet by itself.
+- Church sites show it as a "From the district" card on the signed-in Home page (`district-news.js`, added by `tools/district_news_layer.py`; new churches built with `make_church.py` get it automatically). It updates within about 10 minutes.
+- Only the title, message, date and church are public. Never put names or phone numbers in an announcement.
