@@ -56,3 +56,7 @@ Put photos in the `gallery/` folder and list them in `gallery/gallery.json`, for
 ```
 
 Keep each photo under about 400 KB so the page stays fast on mobile data.
+
+## District news feed (share an announcement on the district page)
+When a church leader writes an **Announcement**, a "Share on district page" box appears. Only announcements with that box ticked are sent to the district page (text only, never photos, comments or members).
+The church's Apps Script needs the updated `Code.gs` for this: paste it over the old one, then **Deploy > Manage deployments > pencil > New version > Deploy**. Until a church has done this, the district page simply shows nothing from that church.

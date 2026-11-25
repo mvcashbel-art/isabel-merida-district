@@ -328,6 +328,10 @@ nav.links a.on{background:var(--blue-soft);color:var(--ink)}
   nav.links{flex:0 0 100%;order:3}
   nav.links a{padding:5px 11px;font-size:.88rem}
 }
+.cnews-h{margin:30px 0 12px;font:600 1.15rem/1.3 var(--display, inherit);color:var(--muted)}
+.cn-text{white-space:pre-line;overflow-wrap:anywhere}
+.cn-link{font-weight:600;text-decoration:none;color:var(--blue);justify-self:start}
+.cn-link:hover{text-decoration:underline}
 @media(max-width:560px){.event .meta .sep{display:none}.event .meta{gap:2px 12px}}
 /* hero title: plain colour, no clipped gradient (paints reliably) */
 .hero h1 .w{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--ink)}
@@ -417,6 +421,10 @@ nav.links a.on{background:var(--blue-soft);color:var(--ink)}
   <section id="news"><div class="wrap">
     <div class="section-head"><h2 data-i18n="news_title"></h2></div>
     <div class="news-list" id="newsList"></div>
+    <div id="churchNews" hidden>
+      <h3 class="cnews-h" data-i18n="cnews_title"></h3>
+      <div class="news-list" id="churchNewsList"></div>
+    </div>
   </div></section>
 
   <section id="churches"><div class="wrap">
@@ -659,7 +667,7 @@ const I18N = {
     sabbath_next: 'Next Sabbath', sabbath_today: 'This Sabbath',
     sabbath_hint: 'Each church card shows its own times.',
     stat_churches: 'churches', stat_isabel: 'in Isabel', stat_merida: 'in Merida',
-    news_title: 'Announcements', pinned: 'Pinned', whole: 'Whole district', news_empty: 'No announcements yet.',
+    cnews_title: 'Latest from the churches', cnews_visit: 'Visit church page', news_title: 'Announcements', pinned: 'Pinned', whole: 'Whole district', news_empty: 'No announcements yet.',
     churches_title: 'Our churches', churches_lead: 'Find the congregation nearest you.',
     search_ph: 'Search by church or barangay', all: 'All', no_results: 'No church matches your search.',
     soon: 'Details coming soon', directions: 'Directions', close: 'Close',
@@ -702,7 +710,7 @@ const I18N = {
     sabbath_next: 'Sunod nga Igpapahulay', sabbath_today: 'Karong Igpapahulay',
     sabbath_hint: 'Ang matag kard sa simbahan nagpakita sa kaugalingon niyang oras.',
     stat_churches: 'ka simbahan', stat_isabel: 'sa Isabel', stat_merida: 'sa Merida',
-    news_title: 'Mga Pahibalo', pinned: 'Gipunting', whole: 'Tibuok distrito', news_empty: 'Wala pay pahibalo.',
+    cnews_title: 'Pinakabag-o gikan sa mga simbahan', cnews_visit: 'Bisitaha ang panid sa simbahan', news_title: 'Mga Pahibalo', pinned: 'Gipunting', whole: 'Tibuok distrito', news_empty: 'Wala pay pahibalo.',
     churches_title: 'Among mga simbahan', churches_lead: 'Pangitaa ang kongregasyon nga pinakaduol kanimo.',
     search_ph: 'Pangitaa pinaagi sa simbahan o barangay', all: 'Tanan', no_results: 'Walay simbahan nga nahiuyon sa imong gipangita.',
     soon: 'Ang detalye moabot sa dili madugay', directions: 'Direksyon', close: 'Isira',
@@ -818,6 +826,32 @@ function renderNews() {
       <h3>${esc(a.title)}</h3><p>${esc(a.body)}</p></article>`;
   }).join('') : `<div class="empty">${esc(T('news_empty'))}</div>`;
 }
+/* announcements that church leaders chose to share on the district page; read straight from each church's own site */
+async function loadChurchNews() {
+  let items = null;
+  try { const c = JSON.parse(sessionStorage.getItem('district-cnews') || 'null'); if (c && Date.now() - c.t < 6e5) items = c.items; } catch (e) {}
+  if (!items) {
+    const jobs = state.churches.filter(c => !isSoon(c) && cApi(c)).map(async c => {
+      const ac = new AbortController(), t = setTimeout(() => ac.abort(), 9000);
+      try {
+        const res = await fetch(cApi(c), { method: 'POST', body: JSON.stringify({ action: 'publicNews' }), signal: ac.signal });
+        const j = await res.json();
+        if (!j || !j.ok || !Array.isArray(j.news)) return [];
+        return j.news.map(n => ({ church: c.name, site: c.website || '', text: String(n.text || ''), at: Number(n.createdAt) || 0, pinned: !!n.pinned }));
+      } catch (e) { return []; } finally { clearTimeout(t); }
+    });
+    items = (await Promise.all(jobs)).flat().filter(n => n.text).sort((a, b) => b.at - a.at).slice(0, 6);
+    try { sessionStorage.setItem('district-cnews', JSON.stringify({ t: Date.now(), items })); } catch (e) {}
+  }
+  state.cnews = items; renderChurchNews();
+}
+function renderChurchNews() {
+  const list = state.cnews || [], box = $('#churchNews'); if (!box) return;
+  box.hidden = !list.length;
+  $('#churchNewsList').innerHTML = list.map(n => `<article class="news">
+      <div class="meta"><span class="tag">${esc(n.church)}</span>${n.at ? `<span>${esc(fmt(new Date(n.at), { month: 'short', day: 'numeric', year: 'numeric' }))}</span>` : ''}</div>
+      <p class="cn-text">${esc(n.text)}</p>${safeUrl(n.site) ? `<a class="cn-link" href="${esc(n.site)}" target="_blank" rel="noopener">${esc(T('cnews_visit'))} →</a>` : ''}</article>`).join('');
+}
 function renderChips() {
   const n = state.churches.length, isa = state.churches.filter(c => c.municipality === 'Isabel').length;
   const defs = [['all', T('all'), n], ['Isabel', 'Isabel', isa], ['Merida', 'Merida', n - isa]];
@@ -929,7 +963,7 @@ function openChurch(i) {
 }
 
 function renderAll() {
-  applyStatic(); renderHero(); renderNews(); renderChips(); renderChurches();
+  applyStatic(); renderHero(); renderNews(); renderChurchNews(); renderChips(); renderChurches();
   renderEvents(); renderMinistries(); renderLeaders(); renderContact(); renderFooter();
   renderVerse(); renderGallery(); renderPrayerForm(); paintTheme(); reveal();
 }
@@ -1190,7 +1224,7 @@ function initFx() {
 initFx();
 renderAll();
 readVerifyHash();
-loadSheets().then(renderAll);
+loadSheets().then(renderAll).then(loadChurchNews);
 </script>
 </body>
 </html>
