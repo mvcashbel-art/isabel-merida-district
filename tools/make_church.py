@@ -16,7 +16,7 @@ What changes from the Tubod files:
   - config.js starts empty (the church's own web app link goes there)
 Nothing secret is written. Passwords are never part of these files.
 """
-import argparse, os, re, shutil, sys
+import argparse, os, re, shutil, subprocess, sys
 
 p = argparse.ArgumentParser()
 p.add_argument('--template', required=True)
@@ -95,6 +95,9 @@ wr('Code.gs', s)
 # images
 for n in ('logo-mark.png', 'icon-192.png', 'icon-512.png', 'og-image.jpg'):
     shutil.copyfile(os.path.join(a.template, n), os.path.join(dest, n))
+# link-preview picture with this church's own name (Messenger / Facebook)
+subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'og', 'make_og.py'),
+                       os.path.join(dest, 'og-image.jpg'), a.name, a.tagline, 'Isabel\u2013Merida District'])
 
 # shared polish layer (colour, motion, dark mode, verse of the day)
 import subprocess
