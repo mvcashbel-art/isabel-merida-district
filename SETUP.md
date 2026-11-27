@@ -68,3 +68,10 @@ District officers sign in to the registry, open **Announcements**, and post a ti
 - Needs one step after updating: paste the new `Code.gs` into the registry's Apps Script and **Deploy > Manage deployments > Edit > New version**. A `News` tab is created in the registry sheet by itself.
 - Church sites show it as a "From the district" card on the signed-in Home page (`district-news.js`, added by `tools/district_news_layer.py`; new churches built with `make_church.py` get it automatically). It updates within about 10 minutes.
 - Only the title, message, date and church are public. Never put names or phone numbers in an announcement.
+
+## District events and Sabbath attendance
+
+- **Events** (district officers only): registry > **Events**. Post the name, date, time and place. Choose the whole district or one church. It shows on the district site and as a "District events" card on church sites, each with **Add to my calendar** and **Share**. Past events drop off by themselves.
+- **Attendance** (everyone who signs in to the registry): registry > **Attendance**. A clerk enters one number per Sabbath for their own church. District officers can enter for any church and see a district chart. No names are stored. Entering the same date again replaces the number.
+- **Share**: every announcement and event has a **Share** button. On a phone it opens the share sheet (Messenger, Facebook). On a computer it copies the text and link. An announcement link opens the district site at that announcement.
+- The registry script needs a new deployment each time `Code.gs` changes (Deploy > Manage deployments > Edit > New version). The `Events` and `Attendance` tabs create themselves in the registry sheet.
