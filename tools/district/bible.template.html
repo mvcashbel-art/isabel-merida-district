@@ -78,7 +78,7 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 (() => {
 'use strict';
 const BASE = 'https://mvcashbel-art.github.io/isabel-merida-district/bible/';
-const KEY = '__KEY__';
+const KEY = '__KEY__', LANGKEY = '__LANGKEY__';
 const INDEX = /*INDEX*/null;
 const BOOKS = INDEX.books, TRS = INDEX.translations;
 const $ = s => document.querySelector(s), app = $('#app');
@@ -92,9 +92,10 @@ const TX = {
   ceb: { title: 'Biblia', sub: 'Basaha, pangitaa ug ipaambit ang Pulong.', ph: 'Pangitag pulong o bersikulo, sama sa Juan 3:16', go: 'Pangita', cont: 'Padayon sa pagbasa', ot: 'Daang Tugon', nt: 'Bag-ong Tugon', chap: 'Kapitulo', prev: 'Nauna', next: 'Sunod', chs: 'Mga kapitulo', copy: 'I-copy', share: 'Ipaambit', copied: 'Na-copy na', none: 'Walay nakit-an. Sulayi ang lain nga pulong.', found: n => n + ' ka bersikulo ang nakit-an', more: 'Gipakita ang unang 150. Dugangi og pulong aron paliton.',
     load: 'Gikarga ang Biblia para sa pagpangita…', err: 'Wala maablihi kini. Susiha ang internet ug sulayi pag-usab.', off: 'I-save ang tibuok Biblia para mabasa bisan walay internet', offp: 'Gi-save… ', offd: 'Na-save na ang tibuok Biblia niining telepono. Mabasa nimo bisan walay internet.', offn: 'Mga 4 MB ang kinahanglan. Sa kini nga device ra kini ma-save.', ver: 'Bersyon', home: 'Tanang libro', sz: 'Gidak-on sa letra' }
 };
-let UI = ls.get('bibleUi', 'en') === 'ceb' ? 'ceb' : 'en';
+let UI = (() => { const u = ls.get('bibleUi', null); if (u === 'ceb' || u === 'en') return u; try { return localStorage.getItem(LANGKEY) === 'ceb' ? 'ceb' : 'en'; } catch (e) { return 'en'; } })();
 const T = k => TX[UI][k];
 const bname = b => UI === 'ceb' ? b.ceb : b.en;
+const tname = b => (TRS.find(t => t.id === TR) || TRS[0]).lang === 'ceb' ? b.ceb : b.en;
 
 /* ---------- look ---------- */
 (() => {
@@ -109,7 +110,7 @@ function chrome() {
   $('#selCopy').textContent = T('copy'); $('#selShare').textContent = T('share'); $('#szDn').title = $('#szUp').title = T('sz');
   document.title = T('title') + ' · __NAME__';
 }
-$('#lng').addEventListener('click', () => { UI = UI === 'ceb' ? 'en' : 'ceb'; ls.set('bibleUi', UI); chrome(); route(); });
+$('#lng').addEventListener('click', () => { UI = UI === 'ceb' ? 'en' : 'ceb'; ls.set('bibleUi', UI); try { localStorage.setItem(LANGKEY, UI); } catch (e) {} chrome(); route(); });
 $('#thm').addEventListener('click', () => { const d = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = d; ls.set('bibleTheme', d); chrome(); });
 $('#szUp').addEventListener('click', () => { FS = Math.min(2, +(FS + .1).toFixed(2)); ls.set('bibleFs', FS); applyFs(); });
 $('#szDn').addEventListener('click', () => { FS = Math.max(.9, +(FS - .1).toFixed(2)); ls.set('bibleFs', FS); applyFs(); });
@@ -201,7 +202,7 @@ function showSel() {
   const rows = [...sel].sort((x, y) => x - y).map(i => cur.vl[i]);
   let parts = [], s = rows[0].a, e = rows[0].b;
   for (let i = 1; i < rows.length; i++) { if (rows[i].a <= e + 1) e = Math.max(e, rows[i].b); else { parts.push([s, e]); s = rows[i].a; e = rows[i].b; } } parts.push([s, e]);
-  const ref = bname(BOOKS[cur.n - 1]) + ' ' + cur.c + ':' + parts.map(p => p[0] === p[1] ? p[0] : p[0] + '–' + p[1]).join(', ');
+  const ref = tname(BOOKS[cur.n - 1]) + ' ' + cur.c + ':' + parts.map(p => p[0] === p[1] ? p[0] : p[0] + '–' + p[1]).join(', ');
   $('#selref').textContent = ref; bar.classList.add('on'); bar.dataset.ref = ref;
 }
 const selText = () => {

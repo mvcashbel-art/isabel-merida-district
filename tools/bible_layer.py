@@ -17,12 +17,13 @@ for d in sys.argv[1:]:
     is_root = os.path.abspath(d) == ROOT
     home = open(os.path.join(d, 'index.html'), encoding='utf-8').read()
     if is_root:
-        name, key = 'Isabel–Merida District', 'district'
+        name, key, lk = 'Isabel–Merida District', 'district', 'district-lang'
     else:
         name = re.search(r'<title>(.*?)</title>', home).group(1).strip()
         m = re.search(r"localStorage\.getItem\('(\w+)Look'", home)
         key = m.group(1) if m else os.path.basename(os.path.abspath(d))
-    s = tpl.replace('__NAME__', name).replace('__KEY__', key).replace('__HOME__', 'index.html').replace('__ICON__', 'icon-192.png').replace('/*INDEX*/null', idx)
+        m2 = re.search(r"const LANG_KEY = '([^']+)'", home); lk = m2.group(1) if m2 else key + 'Lang'
+    s = tpl.replace('__NAME__', name).replace('__KEY__', key).replace('__LANGKEY__', lk).replace('__HOME__', 'index.html').replace('__ICON__', 'icon-192.png').replace('/*INDEX*/null', idx)
     open(os.path.join(d, 'bible.html'), 'w', encoding='utf-8', newline='\n').write(s)
     sp = os.path.join(d, 'sw.js')
     w = open(sp, encoding='utf-8').read(); w0 = w
