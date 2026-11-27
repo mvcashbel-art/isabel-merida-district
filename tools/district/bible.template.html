@@ -66,6 +66,7 @@ mark{background:var(--hl);color:inherit;border-radius:3px;padding:0 1px}
 <body>
 <header class="bar"><div class="bar-in">
   <a class="back" id="back" href="__HOME__">&#8249; __NAME__</a><span class="sp"></span>
+  <button class="ib" id="ver" type="button" aria-label="Bible version" hidden></button>
   <button class="ib" id="szDn" type="button" aria-label="Smaller text">A&#8722;</button>
   <button class="ib" id="szUp" type="button" aria-label="Bigger text">A+</button>
   <button class="ib" id="thm" type="button" aria-label="Dark or light"></button>
@@ -108,9 +109,11 @@ function chrome() {
   document.documentElement.lang = UI === 'ceb' ? 'ceb' : 'en';
   $('#lng').textContent = UI === 'ceb' ? 'BIS' : 'EN'; $('#thm').textContent = document.documentElement.dataset.theme === 'dark' ? '☀' : '☾';
   $('#selCopy').textContent = T('copy'); $('#selShare').textContent = T('share'); $('#szDn').title = $('#szUp').title = T('sz');
+  const vb = $('#ver'); vb.hidden = TRS.length < 2; vb.textContent = tr1().short.replace('Maayong Balita', 'MB'); vb.title = tr1().name;
   document.title = T('title') + ' · __NAME__';
 }
-$('#lng').addEventListener('click', () => { UI = UI === 'ceb' ? 'en' : 'ceb'; ls.set('bibleUi', UI); try { localStorage.setItem(LANGKEY, UI); } catch (e) {} chrome(); route(); });
+$('#lng').addEventListener('click', () => { UI = UI === 'ceb' ? 'en' : 'ceb'; ls.set('bibleUi', UI); try { localStorage.setItem(LANGKEY, UI); } catch (e) {} if (!ls.get('bibleTr', null)) TR = defTr(); chrome(); route(); });
+$('#ver').addEventListener('click', () => { const i = TRS.findIndex(t => t.id === TR); TR = TRS[(i + 1) % TRS.length].id; ls.set('bibleTr', TR); chrome(); route(); });
 $('#thm').addEventListener('click', () => { const d = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = d; ls.set('bibleTheme', d); chrome(); });
 $('#szUp').addEventListener('click', () => { FS = Math.min(2, +(FS + .1).toFixed(2)); ls.set('bibleFs', FS); applyFs(); });
 $('#szDn').addEventListener('click', () => { FS = Math.max(.9, +(FS - .1).toFixed(2)); ls.set('bibleFs', FS); applyFs(); });
@@ -118,7 +121,8 @@ const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('
 
 /* ---------- data: one file per book, cached on the phone as it is read ---------- */
 const memo = {};  /* tr:n -> { v: chapters, nv: normalised } */
-let TR = ls.get('bibleTr', TRS[0].id); if (!TRS.some(t => t.id === TR)) TR = TRS[0].id;
+const defTr = () => (TRS.find(t => t.lang === UI) || TRS[0]).id;   /* the version that matches the site language, until someone picks one */
+let TR = ls.get('bibleTr', null); if (!TRS.some(t => t.id === TR)) TR = defTr();
 const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
 const urlOf = (tr, n) => BASE + tr + '/' + n + '.json';
 async function cacheOpen() { try { return await caches.open('bible-v1'); } catch (e) { return null; } }
