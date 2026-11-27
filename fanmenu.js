@@ -19,7 +19,7 @@ st.textContent = '.fm{display:none}' +
 '@media (max-width:859px){nav.links{display:none}html{scroll-padding-top:76px}.fm{display:block}}' +
 '.fm-veil{position:fixed;inset:0;background:rgba(5,12,30,.55);opacity:0;pointer-events:none;transition:opacity .25s;z-index:70}' +
 '.fm.open .fm-veil{opacity:1;pointer-events:auto}' +
-'.fm-btn{position:fixed;right:14px;bottom:calc(118px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:50%;border:0;padding:0;background:var(--blue,#1d5fd8);color:#fff;display:grid;place-items:center;cursor:pointer;z-index:72;box-shadow:0 6px 18px rgba(10,30,60,.38)}' +
+'.fm-btn{position:fixed;right:14px;bottom:calc(190px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:50%;border:0;padding:0;background:var(--blue,#1d5fd8);color:#fff;display:grid;place-items:center;cursor:pointer;z-index:72;box-shadow:0 6px 18px rgba(10,30,60,.38)}' +
 '.fm-btn:focus-visible,.fm-it:focus-visible .fm-ic{outline:3px solid #e3a72b;outline-offset:3px}' +
 '.fm-btn svg{grid-area:1/1;transition:transform .25s,opacity .2s}.fm-btn .fm-x{opacity:0;transform:rotate(-90deg)}.fm.open .fm-btn .fm-m{opacity:0;transform:rotate(90deg)}.fm.open .fm-btn .fm-x{opacity:1;transform:none}' +
 '.fm-list{position:fixed;inset:0;pointer-events:none;z-index:71}' +
@@ -40,14 +40,14 @@ const label = () => document.documentElement.lang === 'ceb' ? 'Menu: ablihi ang 
 
 function build() {
   const links = [...nav.querySelectorAll('a')], n = links.length;
-  const H = innerHeight, bottomC = 118 + 26;
-  const sin = Math.sin(76 * Math.PI / 180);
-  const R = Math.max(70, Math.min(112, (H - bottomC - 70) / sin, (bottomC - 8) / sin));
+  const H = innerHeight, bottomC = 190 + 26, half = (n - 1) / 2;
+  /* rows are spaced evenly down the screen and bulge out along a circle, so nothing bunches up at the ends */
+  const avail = Math.min(bottomC - 14, H - bottomC - 70), p = Math.max(30, Math.min(42, avail / half)), R = half * p + 16;
   list.innerHTML = '';
   links.forEach((a, i) => {
-    const key = (a.getAttribute('href') || '').replace('#', ''), th = (-76 + 152 * i / (n - 1)) * Math.PI / 180;
+    const key = (a.getAttribute('href') || '').replace('#', ''), yy = (i - half) * p, xx = Math.sqrt(Math.max(0, R * R - yy * yy));
     const it = document.createElement('a'); it.className = 'fm-it' + (a.classList.contains('on') ? ' on' : ''); it.href = a.getAttribute('href');
-    it.style.right = (40 + R * Math.cos(th) - 20) + 'px'; it.style.bottom = (bottomC - R * Math.sin(th) - 20) + 'px'; it.style.transitionDelay = (i * 18) + 'ms';
+    it.style.right = (40 + xx - 20) + 'px'; it.style.bottom = (bottomC - yy - 20) + 'px'; it.style.transitionDelay = (i * 18) + 'ms';
     const map = { news: 'news', churches: 'churches', events: 'events', gallery: 'gallery', ministries: 'ministries', leaders: 'leaders', prayer: 'prayer', verify: 'verify', contact: 'contact' };
     it.innerHTML = '<span class="fm-ic">' + svg(ICONS[map[key]] || ICONS.churches, 20) + '</span><span class="fm-lb"></span>';
     it.querySelector('.fm-lb').textContent = a.textContent.trim();
