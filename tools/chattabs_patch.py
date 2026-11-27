@@ -14,7 +14,7 @@ for p in sys.argv[1:]:
   const dms = all.filter(c => c.kind !== 'group');
   /* every group you belong to is listed, even before its first message */
   const ids = new Set(all.filter(c => c.kind === 'group').map(c => c.groupId));
-  const gr = (S.groups || []).filter(g => ids.has(g.id) || inGroup(S.uid, g.id) || ((S.me && S.me.groups) || []).includes(g.id)).map(g => {
+  const gr = (S.groups || []).filter(g => S.isAdmin || ids.has(g.id) || inGroup(S.uid, g.id) || ((S.me && S.me.groups) || []).includes(g.id)).map(g => {
     const c = all.find(x => x.kind === 'group' && x.groupId === g.id);
     return { g, c, t: c && c.lastTime || 0 };
   }).sort((a, b) => (b.t - a.t) || String(a.g.name).localeCompare(String(b.g.name)));
