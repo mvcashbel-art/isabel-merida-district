@@ -1281,6 +1281,7 @@ document.addEventListener('click', async ev => {
   }
   const msg = title + '\n' + (text || '') + '\n' + url;
   if (navigator.share) { try { await navigator.share({ title, text: title + '\n' + (text || ''), url }); return; } catch (er) { if (er && er.name === 'AbortError') return; } }
+  if (window.__shareBox) { window.__shareBox(title, title + '\n' + (text || ''), url); return; }
   try { await navigator.clipboard.writeText(msg); } catch (er) {}
   const old = b.textContent; b.textContent = T('share_copied'); setTimeout(() => { b.textContent = old; }, 2600);
 });
@@ -1353,5 +1354,6 @@ loadSheets().then(renderAll).then(() => { openSharedItem(); }).then(loadChurchNe
 </script>
 <script src="fanmenu.js" defer></script>
 <script src="totop.js" defer></script>
+<script src="sharebox.js" defer></script>
 </body>
 </html>

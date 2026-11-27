@@ -112,6 +112,9 @@ subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.absp
 # phone half-circle menu
 subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fanmenu_layer.py'), dest])
 
+# desktop share box
+subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sharebox_layer.py'), dest])
+
 # leftovers check
 left = []
 for n in os.listdir(dest):
