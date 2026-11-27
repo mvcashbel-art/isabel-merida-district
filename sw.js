@@ -1,6 +1,6 @@
 /* Isabel–Merida District: keeps the page available with weak or no signal. Church sites in /churches/ have their own. */
 const V = 'district-v7';
-const CORE = ['./', './index.html', './manifest.json', './totop.js', './icon-192.png', './icon-512.png', './logo.png'];
+const CORE = ['./', './index.html', './manifest.json', './totop.js', './fanmenu.js', './icon-192.png', './icon-512.png', './logo.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => Promise.all(CORE.map(u => c.add(new Request(u, { cache: 'reload' })).catch(() => {})))).then(() => self.skipWaiting()));
 });
