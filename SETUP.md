@@ -83,3 +83,4 @@ District officers sign in to the registry, open **Announcements**, and post a ti
 - **Officer guide**: `guide.html` (English and Bisaya, prints on one or two pages), linked from the registry header.
 - **Print ID cards**: Members tab, "Print ID cards" prints the active members in the list shown, ten to an A4 page, each with a QR code. The print is logged like an export.
 - **Sabbath poster**: Events section of the district site, "Make a Sabbath poster" draws a 1080x1350 picture from the next district event and the day's KJV verse. It needs no server.
+- **ID photos**: on a member's card, "Add or change photo" crops to 3:4, shrinks to about 20 KB and stores it in a private `Photos` tab (created on first use) in the registry sheet. Clerks only reach their own church's photos. Photos are never sent to the public pages. Needs a new deployment of `Code.gs`.

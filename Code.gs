@@ -22,6 +22,7 @@ var NEWS_COLS = ['id', 'title', 'body', 'date', 'church', 'pinned', 'createdAt',
 /** District events. church = '' for the whole district, or a church code. time is free text like "9:00 AM". */
 var EVENT_COLS = ['id', 'title', 'date', 'time', 'place', 'description', 'church', 'createdAt', 'createdBy'];
 /** Sabbath attendance: one number per church per date. No names are stored. */
+var PHOTO_COLS = ['memberId', 'church', 'photo', 'updatedAt', 'updatedBy'];
 var ATT_COLS = ['church', 'date', 'count', 'updatedAt', 'updatedBy'];
 var SESSION_SECONDS = 6 * 60 * 60;
 var HASH_ROUNDS = 400;
@@ -127,6 +128,8 @@ function route_(b) {
     case 'listEvents': requireDistrict_(u); return listEvents_();
     case 'saveEvent': requireDistrict_(u); return withLock_(function () { return saveEvent_(u, b); });
     case 'deleteEvent': requireDistrict_(u); return withLock_(function () { return deleteEvent_(u, b); });
+    case 'listPhotos': return listPhotos_(u, b);
+    case 'savePhoto': return withLock_(function () { return savePhoto_(u, b); });
     case 'listAttendance': return listAttendance_(u);
     case 'saveAttendance': return withLock_(function () { return saveAttendance_(u, b); });
     case 'listNews': requireDistrict_(u); return listNews_();
@@ -690,6 +693,40 @@ function deleteEvent_(u, b) {
     }
   }
   fail_('That event no longer exists.');
+}
+
+
+/* ---------------------------------------------------------------- member ID photos (private) */
+/* One small JPEG per member, kept in its own tab so the member list stays light. Never sent to the public pages. */
+
+function listPhotos_(u, b) {
+  var want = null;
+  if (b.ids && b.ids.length) { want = {}; for (var i = 0; i < b.ids.length && i < 300; i++) want[String(b.ids[i])] = true; }
+  var out = {};
+  lazyRows_('Photos', PHOTO_COLS).forEach(function (r) {
+    if (u.role !== 'district' && r.church !== u.church) return;
+    if (want && !want[r.memberId]) return;
+    if (r.photo) out[r.memberId] = r.photo;
+  });
+  return { ok: true, photos: out };
+}
+function savePhoto_(u, b) {
+  var id = clean_(b.memberId, 40);
+  var m = findMember_(id, scoped_(u, readAll_('Members', MEMBER_COLS)));
+  if (!m) fail_('Member not found.');
+  var photo = String(b.photo || '');
+  var rows = lazyRows_('Photos', PHOTO_COLS), cur = null;
+  for (var i = 0; i < rows.length; i++) if (rows[i].memberId === id) cur = rows[i];
+  if (!photo) {
+    if (cur) lazySheet_('Photos', PHOTO_COLS).deleteRow(cur._row);
+    log_(u.username, 'photo removed', id, '');
+    return { ok: true };
+  }
+  if (photo.indexOf('data:image/jpeg;base64,') !== 0 || photo.length > 45000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(photo)) fail_('That picture could not be saved. Try a smaller one.');
+  var rec = { memberId: id, church: m.church, photo: photo, updatedAt: now_(), updatedBy: u.username };
+  if (cur) writeObj_('Photos', PHOTO_COLS, cur._row, rec); else appendObj_('Photos', PHOTO_COLS, rec);
+  log_(u.username, 'photo saved', id, '');
+  return { ok: true };
 }
 
 /* ---------------------------------------------------------------- Sabbath attendance (counts only) */

@@ -116,6 +116,11 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
 .idcard .nm{font-family:var(--display);font-size:1.3rem;line-height:1.15}
 .idcard .qr{width:140px;height:140px;background:#fff;border-radius:8px;padding:4px}
 .idcard .qr svg{width:100%;height:100%;display:block}
+.idcard .idrow{display:flex;gap:12px;align-items:flex-start}
+.idcard .ph{width:96px;height:128px;flex:none;border-radius:8px;object-fit:cover;background:var(--blue-soft);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);font-size:.72rem;text-align:center}
+.phed{display:grid;gap:10px;justify-items:start;margin-top:10px}
+.phed canvas{width:240px;height:320px;max-width:100%;border-radius:10px;border:1px solid var(--line);touch-action:none;cursor:grab;background:var(--blue-soft)}
+.phed input[type=range]{width:240px;max-width:100%}
 .idcard .num{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:.03em}
 .idcard small{color:var(--muted)}
 @media print{
@@ -132,6 +137,10 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
 .scard .ch{font:400 3mm/1.25 system-ui,sans-serif;margin-top:1mm}
 .scard .id{font:700 3mm/1.2 system-ui,sans-serif;font-variant-numeric:tabular-nums;margin-top:2mm}
 .scard .q{width:24mm;height:24mm;align-self:center}
+.scard.hp{grid-template-columns:21mm 1fr 19mm;gap:2mm 2.5mm}
+.scard.hp .q{width:19mm;height:19mm}
+.scard.hp .nm{font-size:3.9mm}
+.scard .p{width:21mm;height:28mm;object-fit:cover;border-radius:1.5mm;border:.2mm solid #d8e5ef;align-self:center}
 .scard .q svg{width:100%;height:100%;display:block}
 .scard .f{grid-column:1/-1;font:400 2.1mm/1.2 system-ui,sans-serif;color:#55678a;align-self:end}
 body.printsheet #sheetArea{display:grid;grid-template-columns:repeat(2,85.6mm);gap:4mm 6mm;justify-content:center;padding:8mm 0}
@@ -460,7 +469,9 @@ $('#cardsBtn').addEventListener('click', async () => {
   if (!list.length) { toast('No active members in this list.'); return; }
   if (list.length > 100 && !confirm('Print ' + list.length + ' cards? That is ' + Math.ceil(list.length / 10) + ' pages.')) return;
   try { await api('logExport', { count: list.length }); } catch (e) {}
-  $('#sheetArea').innerHTML = list.map(m => `<div class="scard"><div class="d">${esc(DISTRICT_NAME)} · Seventh-day Adventist</div>
+  try { await fetchPhotos(list.map(m => m.memberId)); } catch (e) { /* print without photos */ }
+  $('#sheetArea').innerHTML = list.map(m => `<div class="scard${photos[m.memberId] ? ' hp' : ''}"><div class="d">${esc(DISTRICT_NAME)} · Seventh-day Adventist</div>
+    ${photos[m.memberId] ? `<img class="p" alt="" src="${photos[m.memberId]}">` : ''}
     <div><div class="nm">${esc(fullName(m))}</div><div class="ch">${esc(churchName(m.church))}</div><div class="id">${esc(m.memberId)}</div></div>
     <div class="q">${qrSvg(verifyUrl(m.memberId))}</div>
     <div class="f">Scan the code or enter the ID and last name on the district website to confirm.</div></div>`).join('');
@@ -725,13 +736,21 @@ async function openMember(id) {
     <div class="sec"><h4>Membership ID card</h4>
       <div class="idcard" id="printArea">
         <div class="dist">${esc(DISTRICT_NAME)} · Seventh-day Adventist</div>
-        <div class="nm">${esc(fullName(m))}</div>
-        <div class="muted">${esc(churchName(m.church))}</div>
+        <div class="idrow"><div class="ph" id="phBox">No photo</div>
+          <div><div class="nm">${esc(fullName(m))}</div><div class="muted">${esc(churchName(m.church))}</div><div class="num" style="margin-top:6px">${esc(m.memberId)}</div></div></div>
         <div class="qr">${qrSvg(verifyUrl(m.memberId))}</div>
-        <div class="num">${esc(m.memberId)}</div>
         <small>To confirm, scan the code or enter the ID and last name on the district website.</small>
       </div>
-      <div class="actions"><button class="btn ghost small" type="button" id="printBtn">Print ID card</button></div>
+      <div class="actions"><button class="btn ghost small" type="button" id="printBtn">Print ID card</button>
+        <label class="btn ghost small" style="cursor:pointer">Add or change photo<input type="file" id="phFile" accept="image/*" hidden></label>
+        <button class="btn ghost small" type="button" id="phDel" hidden>Remove photo</button></div>
+      <div class="phed" id="phEd" hidden>
+        <canvas id="phCv" width="240" height="320" aria-label="Photo preview. Drag to move."></canvas>
+        <label>Zoom <input type="range" id="phZoom" min="1" max="3" step="0.02" value="1"></label>
+        <div class="actions"><button class="btn small" type="button" id="phUse">Use this photo</button><button class="btn ghost small" type="button" id="phCancel">Cancel</button></div>
+      </div>
+      <p class="muted" style="font-size:.85rem">Photos are private to the registry. Take or upload one only with the member's permission. A plain background and a face looking straight ahead works best.</p>
+      <div class="err" id="phErr" role="alert"></div>
     </div>
     <div class="sec"><h4>History</h4><ul class="hist" id="hist"><li class="muted">Loading…</li></ul></div>`}`;
   const d = $('#dlg'); d.showModal();
@@ -767,6 +786,7 @@ async function openMember(id) {
       } catch (err) { $('#sErr').textContent = err.message; }
     };
     $('#printBtn').onclick = () => { try { window.print(); } catch (e) { toast('Printing is not available here.'); } };
+    wirePhoto(m.memberId);
     try {
       const h = (await api('history', { memberId: m.memberId })).history;
       $('#hist').innerHTML = h.length ? h.map(x => `<li><time>${esc(x.time)}</time><span><b>${esc(x.action)}</b> by ${esc(x.user)}${x.detail ? ' · ' + esc(x.detail) : ''}</span></li>`).join('') : '<li class="muted">No history yet.</li>';
@@ -774,6 +794,63 @@ async function openMember(id) {
   }
 }
 $('#dlg').addEventListener('click', e => { if (e.target === $('#dlg')) $('#dlg').close(); });
+
+
+/* ---------------- member photos ---------------- */
+const photos = {};
+function showPhoto(id) {
+  const box = $('#phBox'); if (!box) return;
+  const url = photos[id];
+  if (url) { box.outerHTML = `<img class="ph" id="phBox" alt="Photo of the member" src="${url}">`; } else { box.outerHTML = '<div class="ph" id="phBox">No photo</div>'; }
+  const del = $('#phDel'); if (del) del.hidden = !url;
+}
+async function fetchPhotos(ids) {
+  const need = ids.filter(i => !(i in photos));
+  for (let i = 0; i < need.length; i += 150) {
+    const chunk = need.slice(i, i + 150);
+    const r = await api('listPhotos', { ids: chunk });
+    chunk.forEach(id => { photos[id] = r.photos[id] || ''; });
+  }
+}
+async function wirePhoto(id) {
+  try { await fetchPhotos([id]); showPhoto(id); } catch (e) { /* photo is optional */ }
+  let img = null, zoom = 1, ox = 0, oy = 0, base = 1;
+  const cv = $('#phCv'), c = cv.getContext('2d'), W = 240, H = 320;
+  const draw = () => {
+    const w = img.width * base * zoom, h = img.height * base * zoom;
+    ox = Math.min(Math.max(ox, -(w - W) / 2), (w - W) / 2); oy = Math.min(Math.max(oy, -(h - H) / 2), (h - H) / 2);
+    c.fillStyle = '#fff'; c.fillRect(0, 0, W, H); c.drawImage(img, W / 2 - w / 2 + ox, H / 2 - h / 2 + oy, w, h);
+  };
+  $('#phFile').onchange = async ev => {
+    const f = ev.target.files[0]; ev.target.value = ''; $('#phErr').textContent = ''; if (!f) return;
+    try {
+      img = await createImageBitmap(f, { imageOrientation: 'from-image' });
+      base = Math.max(W / img.width, H / img.height); zoom = 1; ox = 0; oy = 0; $('#phZoom').value = 1;
+      $('#phEd').hidden = false; draw();
+    } catch (e) { $('#phErr').textContent = 'That file could not be read as a picture.'; }
+  };
+  $('#phZoom').oninput = e => { zoom = Number(e.target.value); draw(); };
+  let drag = null;
+  cv.onpointerdown = e => { drag = { x: e.clientX, y: e.clientY, ox, oy }; cv.setPointerCapture(e.pointerId); };
+  cv.onpointermove = e => { if (!drag || !img) return; const k = W / cv.getBoundingClientRect().width; ox = drag.ox + (e.clientX - drag.x) * k; oy = drag.oy + (e.clientY - drag.y) * k; draw(); };
+  cv.onpointerup = cv.onpointercancel = () => { drag = null; };
+  $('#phCancel').onclick = () => { $('#phEd').hidden = true; img = null; };
+  $('#phUse').onclick = async () => {
+    if (!img) return; $('#phErr').textContent = ''; $('#phUse').disabled = true;
+    try {
+      let q = 0.85, data = cv.toDataURL('image/jpeg', q);
+      while (data.length > 42000 && q > 0.3) { q -= 0.1; data = cv.toDataURL('image/jpeg', q); }
+      if (data.length > 42000) throw new Error('That picture is too detailed. Try another one.');
+      await api('savePhoto', { memberId: id, photo: data });
+      photos[id] = data; $('#phEd').hidden = true; img = null; showPhoto(id); toast('Photo saved');
+    } catch (e) { $('#phErr').textContent = e.message; }
+    $('#phUse').disabled = false;
+  };
+  $('#phDel').onclick = async () => {
+    if (!confirm('Remove this photo?')) return;
+    try { await api('savePhoto', { memberId: id, photo: '' }); photos[id] = ''; showPhoto(id); toast('Photo removed'); } catch (e) { $('#phErr').textContent = e.message; }
+  };
+}
 
 /* ---------------- check someone ---------------- */
 $('#checkForm').addEventListener('submit', async e => {
@@ -1021,6 +1098,8 @@ async function demoApi(b) {
       const rec = { id: it.id || 'E' + Math.random().toString(36).slice(2, 10), title: it.title.trim(), date: it.date || '', time: it.time || '', place: it.place || '', description: it.description || '', church: it.church || '' };
       const i = S.events.findIndex(x => x.id === rec.id); if (i < 0) S.events.unshift(rec); else S.events[i] = rec; return { ok: true, item: rec }; }
     case 'deleteEvent': S.events = (S.events || []).filter(x => x.id !== b.id); return { ok: true };
+    case 'listPhotos': { S.photos = S.photos || {}; const o = {}; (b.ids || []).forEach(i => { if (S.photos[i]) o[i] = S.photos[i]; }); return { ok: true, photos: o }; }
+    case 'savePhoto': { S.photos = S.photos || {}; if (b.photo) S.photos[b.memberId] = b.photo; else delete S.photos[b.memberId]; return { ok: true }; }
     case 'listAttendance': return { ok: true, attendance: (S.att = S.att || []).filter(a => u.role === 'district' || a.church === u.church).map(a => ({ ...a })) };
     case 'saveAttendance': { S.att = S.att || []; const c = u.role === 'district' ? b.church : u.church; const i = S.att.findIndex(a => a.church === c && a.date === b.date);
       const rec = { church: c, date: b.date, count: Number(b.count) || 0 }; if (i < 0) S.att.push(rec); else S.att[i] = rec; return { ok: true }; }
