@@ -115,6 +115,12 @@ subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.absp
 # desktop share box
 subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sharebox_layer.py'), dest])
 
+# Bible reader with reading plans
+subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bible_layer.py'), dest])
+
+# "New version, tap to refresh" bar
+subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'updatebar_layer.py'), dest])
+
 # leftovers check
 left = []
 for n in os.listdir(dest):
