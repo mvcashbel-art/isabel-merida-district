@@ -11,7 +11,7 @@ for d in sys.argv[1:]:
     new_js = open(SRC, encoding='utf-8').read()
     changed = (not os.path.exists(dst)) or open(dst, encoding='utf-8').read() != new_js
     shutil.copyfile(SRC, dst)
-    for page in ('index.html',):
+    for page in ('index.html', 'bible-game.html'):
         p = os.path.join(d, page)
         if not os.path.exists(p): continue
         s = open(p, encoding='utf-8').read()
