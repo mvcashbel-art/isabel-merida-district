@@ -1,6 +1,6 @@
 /* Isabel–Merida District: keeps the page available with weak or no signal. Church sites in /churches/ have their own. */
-const V = 'district-v27';
-const CORE = ['./', './index.html', './bible.html', './manifest.json', './sharebox.js', './totop.js', './fanmenu.js', './updatebar.js', './icon-192.png', './icon-512.png', './logo.png'];
+const V = 'district-v28';
+const CORE = ['./', './index.html', './bible.html', './manifest.json', './sharebox.js', './totop.js', './fanmenu.js', './updatebar.js', './installtip.js', './icon-192.png', './icon-512.png', './logo.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => Promise.all(CORE.map(u => c.add(new Request(u, { cache: 'reload' })).catch(() => {})))).then(() => self.skipWaiting()));
 });

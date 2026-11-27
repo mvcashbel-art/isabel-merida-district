@@ -121,6 +121,9 @@ subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.absp
 # "New version, tap to refresh" bar
 subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'updatebar_layer.py'), dest])
 
+# one-time "Add to Home screen" message
+subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'installtip_layer.py'), dest])
+
 # leftovers check
 left = []
 for n in os.listdir(dest):
