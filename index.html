@@ -378,6 +378,7 @@ nav.links a.on{background:var(--blue-soft);color:var(--ink)}
       <a href="#contact" data-i18n="nav_contact"></a>
     </nav>
     <div class="hbtns">
+      <button class="icon-btn" id="offlineBtn" type="button" data-offline title="Use offline" aria-label="Use offline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg></button>
       <button class="icon-btn" id="installBtn" type="button" hidden title="Install app" aria-label="Install app"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 11l5 5 5-5M5 20h14"/></svg></button>
       <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch light or dark"></button>
       <button class="lang" id="langBtn" type="button"></button>
@@ -1358,5 +1359,6 @@ loadSheets().then(renderAll).then(() => { openSharedItem(); }).then(loadChurchNe
 <script src="sharebox.js" defer></script>
 <script src="updatebar.js" defer></script>
 <script src="installtip.js" defer></script>
+<script src="offline.js" defer></script>
 </body>
 </html>
