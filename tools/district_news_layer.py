@@ -6,7 +6,10 @@ Usage: python3 tools/district_news_layer.py churches/apale [churches/isabel ... 
 import os, re, shutil, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 for d in sys.argv[1:]:
-    shutil.copyfile(os.path.join(HERE, 'district', 'district-news.js'), os.path.join(d, 'district-news.js'))
+    dst = os.path.join(d, 'district-news.js')
+    new_js = open(os.path.join(HERE, 'district', 'district-news.js'), encoding='utf-8').read()
+    changed = (not os.path.exists(dst)) or open(dst, encoding='utf-8').read() != new_js
+    shutil.copyfile(os.path.join(HERE, 'district', 'district-news.js'), dst)
     p = os.path.join(d, 'index.html')
     s = open(p, encoding='utf-8').read()
     if 'district-news.js' not in s:
@@ -15,9 +18,10 @@ for d in sys.argv[1:]:
         open(p, 'w', encoding='utf-8', newline='\n').write(s)
     sp = os.path.join(d, 'sw.js')
     w = open(sp, encoding='utf-8').read()
-    if 'district-news.js' not in w:
-        assert "'./manifest.json'," in w
-        w = w.replace("'./manifest.json',", "'./manifest.json', './district-news.js',", 1)
+    if 'district-news.js' not in w or changed:
+        if 'district-news.js' not in w:
+            assert "'./manifest.json'," in w
+            w = w.replace("'./manifest.json',", "'./manifest.json', './district-news.js',", 1)
         w = re.sub(r"const VERSION = '([a-z0-9-]+)-v(\d+)';", lambda m: "const VERSION = '%s-v%d';" % (m.group(1), int(m.group(2)) + 1), w, count=1)
         open(sp, 'w', encoding='utf-8', newline='\n').write(w)
     print('district news added to', d)

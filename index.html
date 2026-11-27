@@ -667,7 +667,7 @@ const I18N = {
     sabbath_next: 'Next Sabbath', sabbath_today: 'This Sabbath',
     sabbath_hint: 'Each church card shows its own times.',
     stat_churches: 'churches', stat_isabel: 'in Isabel', stat_merida: 'in Merida',
-    cnews_title: 'Latest from the churches', cnews_visit: 'Visit church page', news_title: 'Announcements', pinned: 'Pinned', whole: 'Whole district', news_empty: 'No announcements yet.',
+    share_btn: 'Share', share_copied: 'Copied. Paste it into Messenger or Facebook.', cnews_title: 'Latest from the churches', cnews_visit: 'Visit church page', news_title: 'Announcements', pinned: 'Pinned', whole: 'Whole district', news_empty: 'No announcements yet.',
     churches_title: 'Our churches', churches_lead: 'Find the congregation nearest you.',
     search_ph: 'Search by church or barangay', all: 'All', no_results: 'No church matches your search.',
     soon: 'Details coming soon', directions: 'Directions', close: 'Close',
@@ -710,7 +710,7 @@ const I18N = {
     sabbath_next: 'Sunod nga Igpapahulay', sabbath_today: 'Karong Igpapahulay',
     sabbath_hint: 'Ang matag kard sa simbahan nagpakita sa kaugalingon niyang oras.',
     stat_churches: 'ka simbahan', stat_isabel: 'sa Isabel', stat_merida: 'sa Merida',
-    cnews_title: 'Pinakabag-o gikan sa mga simbahan', cnews_visit: 'Bisitaha ang panid sa simbahan', news_title: 'Mga Pahibalo', pinned: 'Gipunting', whole: 'Tibuok distrito', news_empty: 'Wala pay pahibalo.',
+    share_btn: 'Ipaambit', share_copied: 'Nakopya. I-paste sa Messenger o Facebook.', cnews_title: 'Pinakabag-o gikan sa mga simbahan', cnews_visit: 'Bisitaha ang panid sa simbahan', news_title: 'Mga Pahibalo', pinned: 'Gipunting', whole: 'Tibuok distrito', news_empty: 'Wala pay pahibalo.',
     churches_title: 'Among mga simbahan', churches_lead: 'Pangitaa ang kongregasyon nga pinakaduol kanimo.',
     search_ph: 'Pangitaa pinaagi sa simbahan o barangay', all: 'Tanan', no_results: 'Walay simbahan nga nahiuyon sa imong gipangita.',
     soon: 'Ang detalye moabot sa dili madugay', directions: 'Direksyon', close: 'Isira',
@@ -777,14 +777,18 @@ async function loadSheets() {
   /* announcements posted by district officers in the registry (public, no member data) */
   if (CONFIG.registryApi) {
     try {
-      let list = null;
+      let data = null;
       try {
         const res = await fetch(CONFIG.registryApi, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'publicAnnouncements' }), redirect: 'follow' });
         const r = await res.json();
-        if (r && r.ok && Array.isArray(r.announcements)) { list = r.announcements; try { localStorage.setItem('district-ann', JSON.stringify(list)); } catch (e) {} }
-      } catch (e) { try { list = JSON.parse(localStorage.getItem('district-ann') || 'null'); } catch (e2) {} }
-      if (list && list.length) {
-        state.announcements = list.map(x => ({ title: x.title, body: x.body, date: x.date, pinned: x.pinned, church: x.churchName || '' }));
+        if (r && r.ok && Array.isArray(r.announcements)) { data = r; try { localStorage.setItem('district-ann', JSON.stringify(r)); } catch (e) {} }
+      } catch (e) { try { const c = JSON.parse(localStorage.getItem('district-ann') || 'null'); data = Array.isArray(c) ? { announcements: c, events: [] } : c; } catch (e2) {} }
+      if (data && data.announcements && data.announcements.length) {
+        state.announcements = data.announcements.map(x => ({ id: x.id, title: x.title, body: x.body, date: x.date, pinned: x.pinned, church: x.churchName || '' }));
+        any++;
+      }
+      if (data && data.events && data.events.length) {
+        state.events = data.events.map(x => ({ id: x.id, title: x.title, date: x.date, time: x.time, place: x.place, description: x.description, church: x.churchName || '' }));
         any++;
       }
     } catch (e) { console.warn('District announcements failed', e); }
@@ -833,12 +837,13 @@ function renderNews() {
     if (pa !== pb) return pa ? -1 : 1;
     return (pd(b.date) || 0) - (pd(a.date) || 0);
   });
-  $('#newsList').innerHTML = list.length ? list.map(a => {
+  state.newsList = list;
+  $('#newsList').innerHTML = list.length ? list.map((a, i) => {
     const pin = /^(yes|true|1)$/i.test(a.pinned || ''); const d = pd(a.date);
-    return `<article class="news${pin ? ' pin' : ''}">
+    return `<article class="news${pin ? ' pin' : ''}"${a.id ? ` id="a-${esc(a.id)}"` : ''}>
       <div class="meta">${pin ? `<span class="tag gold">${esc(T('pinned'))}</span>` : ''}
         <span class="tag">${esc(a.church || T('whole'))}</span>${d ? `<span>${esc(fmt(d, { month: 'short', day: 'numeric', year: 'numeric' }))}</span>` : ''}</div>
-      <h3>${esc(a.title)}</h3><p>${esc(a.body)}</p></article>`;
+      <h3>${esc(a.title)}</h3><p>${esc(a.body)}</p><button class="cal" type="button" data-share="n:${esc(a.id || '')}:${i}">${esc(T('share_btn'))}</button></article>`;
   }).join('') : `<div class="empty">${esc(T('news_empty'))}</div>`;
 }
 /* announcements that church leaders chose to share on the district page; read straight from each church's own site */
@@ -900,7 +905,7 @@ function renderEvents() {
       <div class="dateblock"><span>${esc(fmt(e._d, { month: 'short' }))}</span><b>${e._d.getDate()}</b></div>
       <div><h3>${esc(e.title)}</h3>
         <div class="meta">${[e.time, e.place, e.church || T('whole')].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('<span class="sep">·</span>')}</div>
-        ${e.description ? `<p>${esc(e.description)}</p>` : ''}<button class="cal" type="button" data-ev="${i}">${esc(T('cal_add'))}</button></div></article>`).join('')
+        ${e.description ? `<p>${esc(e.description)}</p>` : ''}<button class="cal" type="button" data-ev="${i}">${esc(T('cal_add'))}</button> <button class="cal" type="button" data-share="e::${i}">${esc(T('share_btn'))}</button></div></article>`).join('')
     : `<div class="empty">${esc(T('events_empty'))}</div>`;
 }
 function renderMinistries() {
@@ -1182,6 +1187,31 @@ $('#eventList').addEventListener('click', e => {
   a.download = (ev.title || 'event').replace(/[^\w]+/g, '-').slice(0, 40) + '.ics'; document.body.appendChild(a); a.click(); a.remove();
 });
 
+/* ---------- share an announcement or event (Messenger / Facebook) ---------- */
+document.addEventListener('click', async ev => {
+  const b = ev.target.closest('[data-share]'); if (!b) return;
+  const [kind, id, i] = b.dataset.share.split(':');
+  const base = location.href.split('#')[0];
+  let title, text, url = base + '#news';
+  if (kind === 'n') {
+    const a = (state.newsList || [])[+i]; if (!a) return; title = a.title; text = a.body; if (a.id) url = base + '#a-' + a.id;
+  } else {
+    const e = (state.evList || [])[+i]; if (!e) return; title = e.title;
+    text = [fmt(e._d, { weekday: 'long', month: 'long', day: 'numeric' }), e.time, e.place, e.description].filter(Boolean).join(' · '); url = base + '#events';
+  }
+  const msg = title + '\n' + (text || '') + '\n' + url;
+  if (navigator.share) { try { await navigator.share({ title, text: title + '\n' + (text || ''), url }); return; } catch (er) { if (er && er.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(msg); } catch (er) {}
+  const old = b.textContent; b.textContent = T('share_copied'); setTimeout(() => { b.textContent = old; }, 2600);
+});
+/* a shared link  #a-<id>  scrolls to that announcement and highlights it */
+function openSharedItem() {
+  const m = /^#(a-[A-Za-z0-9]+)$/.exec(location.hash); if (!m) return;
+  const el = document.getElementById(m[1]); if (!el) return;
+  el.scrollIntoView({ block: 'center' }); el.style.transition = 'box-shadow .4s'; el.style.boxShadow = '0 0 0 3px var(--gold, #d79a22)';
+  setTimeout(() => { el.style.boxShadow = ''; }, 3200);
+}
+
 /* ---------- motion and polish ---------- */
 let io = null;
 function reveal() {
@@ -1239,7 +1269,7 @@ function initFx() {
 initFx();
 renderAll();
 readVerifyHash();
-loadSheets().then(renderAll).then(loadChurchNews);
+loadSheets().then(renderAll).then(() => { openSharedItem(); }).then(loadChurchNews);
 </script>
 </body>
 </html>

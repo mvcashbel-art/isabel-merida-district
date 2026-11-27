@@ -19,6 +19,10 @@ var CHURCH_COLS = ['code', 'name', 'municipality'];
 var LOG_COLS = ['time', 'user', 'action', 'memberId', 'detail'];
 /** District announcements. church = '' for the whole district, or a church code (TBD, I02 ...). */
 var NEWS_COLS = ['id', 'title', 'body', 'date', 'church', 'pinned', 'createdAt', 'createdBy'];
+/** District events. church = '' for the whole district, or a church code. time is free text like "9:00 AM". */
+var EVENT_COLS = ['id', 'title', 'date', 'time', 'place', 'description', 'church', 'createdAt', 'createdBy'];
+/** Sabbath attendance: one number per church per date. No names are stored. */
+var ATT_COLS = ['church', 'date', 'count', 'updatedAt', 'updatedBy'];
 var SESSION_SECONDS = 6 * 60 * 60;
 var HASH_ROUNDS = 400;
 var LOOKUPS_PER_HOUR = 60;
@@ -120,6 +124,11 @@ function route_(b) {
     case 'getSheetId': requireDistrict_(u); return getSheetId_(b);
     case 'previewFromSheet': requireDistrict_(u); return previewFromSheet_(u, b);
     case 'logExport': log_(u.username, 'export', '', String(Number(b.count) || 0) + ' rows'); return { ok: true };
+    case 'listEvents': requireDistrict_(u); return listEvents_();
+    case 'saveEvent': requireDistrict_(u); return withLock_(function () { return saveEvent_(u, b); });
+    case 'deleteEvent': requireDistrict_(u); return withLock_(function () { return deleteEvent_(u, b); });
+    case 'listAttendance': return listAttendance_(u);
+    case 'saveAttendance': return withLock_(function () { return saveAttendance_(u, b); });
     case 'listNews': requireDistrict_(u); return listNews_();
     case 'saveNews': requireDistrict_(u); return withLock_(function () { return saveNews_(u, b); });
     case 'deleteNews': requireDistrict_(u); return withLock_(function () { return deleteNews_(u, b); });
@@ -564,25 +573,27 @@ function resetAdmin() {
 /* ---------------------------------------------------------------- district announcements */
 
 /** The News tab is created the first time it is needed, so nothing has to be re-run in setup(). */
-function newsSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet(), s = ss.getSheetByName('News');
+function lazySheet_(name, cols) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), s = ss.getSheetByName(name);
   if (!s) {
-    s = ss.insertSheet('News');
-    s.getRange(1, 1, 1, NEWS_COLS.length).setValues([NEWS_COLS]);
-    s.getRange(1, 1, s.getMaxRows(), NEWS_COLS.length).setNumberFormat('@');
+    s = ss.insertSheet(name);
+    s.getRange(1, 1, 1, cols.length).setValues([cols]);
+    s.getRange(1, 1, s.getMaxRows(), cols.length).setNumberFormat('@');
     s.setFrozenRows(1);
   }
   return s;
 }
-function newsRows_() {
-  var s = newsSheet_(), last = s.getLastRow();
+function lazyRows_(name, cols) {
+  var s = lazySheet_(name, cols), last = s.getLastRow();
   if (last < 2) return [];
-  return s.getRange(2, 1, last - 1, NEWS_COLS.length).getValues().map(function (r, i) {
+  return s.getRange(2, 1, last - 1, cols.length).getValues().map(function (r, i) {
     var o = { _row: i + 2 };
-    NEWS_COLS.forEach(function (c, j) { o[c] = norm_(r[j]); });
+    cols.forEach(function (c, j) { o[c] = norm_(r[j]); });
     return o;
   });
 }
+function newsSheet_() { return lazySheet_('News', NEWS_COLS); }
+function newsRows_() { return lazyRows_('News', NEWS_COLS); }
 function newsOut_(o) {
   return { id: o.id, title: o.title, body: o.body, date: o.date, church: o.church, pinned: o.pinned === 'yes' ? 'yes' : '', createdAt: o.createdAt, createdBy: o.createdBy };
 }
@@ -601,7 +612,14 @@ function publicAnnouncements_() {
     x.churchName = x.church ? (names[x.church] || '') : '';
     return x;
   });
-  return { ok: true, announcements: list };
+  var today = today_();
+  var events = lazyRows_('Events', EVENT_COLS).filter(function (e) { return e.date >= today; })
+    .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }).slice(0, 40).map(function (e) {
+      var x = eventOut_(e); delete x.createdBy; delete x.createdAt;
+      x.churchName = x.church ? (names[x.church] || '') : '';
+      return x;
+    });
+  return { ok: true, announcements: list, events: events };
 }
 function listNews_() {
   return { ok: true, news: newsRows_().sort(newsSort_).map(newsOut_) };
@@ -634,4 +652,64 @@ function deleteNews_(u, b) {
     }
   }
   fail_('That announcement no longer exists.');
+}
+
+/* ---------------------------------------------------------------- district events */
+
+function eventOut_(o) {
+  return { id: o.id, title: o.title, date: o.date, time: o.time, place: o.place, description: o.description, church: o.church, createdAt: o.createdAt, createdBy: o.createdBy };
+}
+function listEvents_() {
+  var rows = lazyRows_('Events', EVENT_COLS).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+  return { ok: true, events: rows.map(eventOut_) };
+}
+function saveEvent_(u, b) {
+  var n = b.item || {};
+  var title = clean_(n.title, 140), date = clean_(n.date, 10), church = clean_(n.church, 10);
+  if (!title) fail_('Please write a title.');
+  if (!date || !dateOk_(date)) fail_('Please choose the date.');
+  if (church && !churchExists_(church)) fail_('That church is not in the list.');
+  var rows = lazyRows_('Events', EVENT_COLS), cur = null;
+  if (n.id) { for (var i = 0; i < rows.length; i++) if (rows[i].id === n.id) cur = rows[i]; if (!cur) fail_('That event no longer exists.'); }
+  var rec = {
+    id: cur ? cur.id : 'E' + Utilities.getUuid().replace(/-/g, '').slice(0, 8),
+    title: title, date: date, time: clean_(n.time, 30), place: clean_(n.place, 140), description: clean_(n.description, 1000), church: church,
+    createdAt: cur ? cur.createdAt : now_(), createdBy: cur ? cur.createdBy : u.username
+  };
+  if (cur) writeObj_('Events', EVENT_COLS, cur._row, rec); else appendObj_('Events', EVENT_COLS, rec);
+  log_(u.username, cur ? 'event-edit' : 'event-add', '', title);
+  return { ok: true, item: eventOut_(rec) };
+}
+function deleteEvent_(u, b) {
+  var rows = lazyRows_('Events', EVENT_COLS);
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].id === String(b.id || '')) {
+      lazySheet_('Events', EVENT_COLS).deleteRow(rows[i]._row);
+      log_(u.username, 'event-delete', '', rows[i].title);
+      return { ok: true };
+    }
+  }
+  fail_('That event no longer exists.');
+}
+
+/* ---------------------------------------------------------------- Sabbath attendance (counts only) */
+
+function listAttendance_(u) {
+  var rows = lazyRows_('Attendance', ATT_COLS).filter(function (r) { return u.role === 'district' || r.church === u.church; });
+  return { ok: true, attendance: rows.map(function (r) { return { church: r.church, date: r.date, count: Number(r.count) || 0, updatedAt: r.updatedAt, updatedBy: r.updatedBy }; }) };
+}
+function saveAttendance_(u, b) {
+  var church = u.role === 'district' ? clean_(b.church, 10) : u.church;
+  if (!church || !churchExists_(church)) fail_('Please choose a church.');
+  var date = clean_(b.date, 10);
+  if (!date || !dateOk_(date)) fail_('Please choose the Sabbath date.');
+  if (date > today_()) fail_('That date has not come yet.');
+  var count = Number(b.count);
+  if (!isFinite(count) || count < 0 || count > 5000 || Math.floor(count) !== count) fail_('Enter a whole number from 0 to 5000.');
+  var rows = lazyRows_('Attendance', ATT_COLS), cur = null;
+  for (var i = 0; i < rows.length; i++) if (rows[i].church === church && rows[i].date === date) cur = rows[i];
+  var rec = { church: church, date: date, count: String(count), updatedAt: now_(), updatedBy: u.username };
+  if (cur) writeObj_('Attendance', ATT_COLS, cur._row, rec); else appendObj_('Attendance', ATT_COLS, rec);
+  log_(u.username, 'attendance', '', churchName_(church) + ' ' + date + ': ' + count);
+  return { ok: true };
 }

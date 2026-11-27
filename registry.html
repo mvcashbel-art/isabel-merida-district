@@ -168,6 +168,8 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="members" aria-selected="true">Members</button>
       <button class="tab" role="tab" data-tab="check" aria-selected="false">Check someone</button>
+      <button class="tab" role="tab" data-tab="att" aria-selected="false">Attendance</button>
+      <button class="tab" role="tab" data-tab="events" aria-selected="false" id="eventsTab" hidden>Events</button>
       <button class="tab" role="tab" data-tab="news" aria-selected="false" id="newsTab" hidden>Announcements</button>
       <button class="tab" role="tab" data-tab="users" aria-selected="false" id="usersTab" hidden>Officers</button>
     </div>
@@ -201,6 +203,48 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
         </form>
         <div class="err" id="ckErr" role="alert"></div>
         <div id="ckOut" style="display:grid;gap:10px"></div>
+      </div>
+    </section>
+
+    <section id="tab-att" hidden>
+      <form class="panel" id="attForm">
+        <h2>Sabbath attendance</h2>
+        <p class="muted">Enter one number for the Sabbath: how many were present. Do not write any names. Entering the same date again replaces the old number.</p>
+        <div class="row2">
+          <label for="aChurch" id="aChurchWrap">Church<select id="aChurch"></select></label>
+          <label for="aDate">Sabbath date<input id="aDate" type="date" required></label>
+          <label for="aCount">Present<input id="aCount" type="number" min="0" max="5000" step="1" inputmode="numeric" required></label>
+        </div>
+        <div class="err" id="aErr" role="alert"></div>
+        <div class="actions"><button class="btn" type="submit">Save number</button></div>
+      </form>
+      <div class="panel">
+        <h3 id="attChartTitle">Last 12 Sabbaths</h3>
+        <div id="attChart" style="overflow-x:auto"></div>
+        <div class="tablebox"><table><thead id="attHead"></thead><tbody id="attRows"></tbody></table></div>
+        <div class="count" id="attCount"></div>
+      </div>
+    </section>
+
+    <section id="tab-events" hidden>
+      <form class="panel" id="evForm">
+        <h2 id="evFormTitle">Add a district event</h2>
+        <p class="muted">It shows on the district website and on the church websites you choose, with an "Add to my phone calendar" button. Past events disappear by themselves.</p>
+        <div class="row2">
+          <label for="eTitle">Event name<input id="eTitle" maxlength="140" required></label>
+          <label for="eDate">Date<input id="eDate" type="date" required></label>
+          <label for="eTime">Time<input id="eTime" maxlength="30" placeholder="9:00 AM"></label>
+          <label for="ePlace">Place<input id="ePlace" maxlength="140" placeholder="Where"></label>
+          <label for="eChurch">Show on<select id="eChurch"></select></label>
+        </div>
+        <label for="eDesc">Details<textarea id="eDesc" rows="3" maxlength="1000"></textarea></label>
+        <div class="err" id="eErr" role="alert"></div>
+        <div class="actions"><button class="btn" type="submit">Save event</button><button class="btn ghost" type="button" id="eReset">Clear form</button></div>
+      </form>
+      <div class="panel">
+        <h3>Events</h3>
+        <div class="tablebox"><table><thead><tr><th>Date</th><th>Event</th><th>Shown on</th><th></th></tr></thead><tbody id="evRows"></tbody></table></div>
+        <div class="count" id="evCount"></div>
       </div>
     </section>
 
@@ -323,6 +367,7 @@ async function enter() {
   if (me.role !== 'district') $('#whoText').textContent = me.name + ' · Clerk, ' + churchName(me.church);
   $('#usersTab').hidden = me.role !== 'district';
   $('#newsTab').hidden = me.role !== 'district';
+  $('#eventsTab').hidden = me.role !== 'district';
   $('#fChurch').hidden = me.role !== 'district';
   $('#fChurch').innerHTML = '<option value="all">All churches</option>' + churches.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
   $('#app').hidden = false; showTab('members'); await loadMembers(); resetIdle();
@@ -347,9 +392,11 @@ $('#signOut').addEventListener('click', () => endSession(''));
 /* ---------------- tabs ---------------- */
 function showTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
-  ['members', 'check', 'news', 'users'].forEach(n => { $('#tab-' + n).hidden = n !== name; });
+  ['members', 'check', 'att', 'events', 'news', 'users'].forEach(n => { $('#tab-' + n).hidden = n !== name; });
   if (name === 'users') loadUsers();
   if (name === 'news') loadNews();
+  if (name === 'events') loadEvents();
+  if (name === 'att') loadAtt();
 }
 document.querySelector('.tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) showTab(b.dataset.tab); });
 
@@ -774,6 +821,77 @@ $('#newsForm').addEventListener('submit', async e => {
   } catch (err) { $('#nErr').textContent = err.message; }
 });
 
+/* ---------------- district events (district only) ---------------- */
+let evs = [], evEditId = '';
+async function loadEvents() {
+  evs = (await api('listEvents')).events;
+  $('#eChurch').innerHTML = '<option value="">Whole district (every church)</option>' + churches.map(c => `<option value="${esc(c.code)}">${esc(c.name)} only</option>`).join('');
+  const t = todayStr();
+  $('#evRows').innerHTML = evs.map(n => `<tr style="cursor:default"><td style="white-space:nowrap">${esc(n.date)}${n.time ? '<br><span class="muted">' + esc(n.time) + '</span>' : ''}</td><td>${esc(n.title)}${n.date < t ? ' <span class="muted">(past)</span>' : ''}</td><td>${esc(n.church ? churchName(n.church) : 'Whole district')}</td>
+    <td style="white-space:nowrap"><button class="btn ghost small" data-eedit="${esc(n.id)}" type="button">Edit</button> <button class="btn danger small" data-edel="${esc(n.id)}" type="button">Delete</button></td></tr>`).join('');
+  $('#evCount').textContent = evs.length ? evs.length + ' events' : 'No events yet.';
+}
+function clearEvForm() { $('#evForm').reset(); evEditId = ''; $('#evFormTitle').textContent = 'Add a district event'; $('#eErr').textContent = ''; }
+$('#eReset').addEventListener('click', clearEvForm);
+$('#evRows').addEventListener('click', async e => {
+  const ed = e.target.closest('[data-eedit]'), dl = e.target.closest('[data-edel]');
+  if (ed) {
+    const n = evs.find(x => x.id === ed.dataset.eedit); if (!n) return;
+    evEditId = n.id; $('#eTitle').value = n.title; $('#eDate').value = n.date; $('#eTime').value = n.time; $('#ePlace').value = n.place; $('#eDesc').value = n.description; $('#eChurch').value = n.church;
+    $('#evFormTitle').textContent = 'Edit event'; $('#evForm').scrollIntoView({ behavior: 'smooth' });
+  }
+  if (dl) {
+    const n = evs.find(x => x.id === dl.dataset.edel); if (!n || !confirm('Delete "' + n.title + '"? It will disappear from every website.')) return;
+    try { await api('deleteEvent', { id: n.id }); toast('Deleted'); if (evEditId === n.id) clearEvForm(); loadEvents(); } catch (err) { toast(err.message); }
+  }
+});
+$('#evForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('#eErr').textContent = '';
+  try {
+    await api('saveEvent', { item: { id: evEditId, title: $('#eTitle').value, date: $('#eDate').value, time: $('#eTime').value, place: $('#ePlace').value, description: $('#eDesc').value, church: $('#eChurch').value } });
+    toast(evEditId ? 'Saved' : 'Event added. It will show on the websites within a few minutes.'); clearEvForm(); loadEvents();
+  } catch (err) { $('#eErr').textContent = err.message; }
+});
+
+/* ---------------- Sabbath attendance ---------------- */
+let att = [];
+function lastSabbath() { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 1) % 7)); const z = n => ('0' + n).slice(-2); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); }
+function shortDate(s) { const d = new Date(s + 'T00:00:00'); return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+async function loadAtt() {
+  const isD = me.role === 'district';
+  $('#aChurchWrap').hidden = !isD;
+  if (isD && !$('#aChurch').options.length) $('#aChurch').innerHTML = churches.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
+  if (!$('#aDate').value) $('#aDate').value = lastSabbath();
+  $('#aDate').max = todayStr();
+  att = (await api('listAttendance')).attendance;
+  renderAtt();
+}
+function renderAtt() {
+  const isD = me.role === 'district';
+  const dates = [...new Set(att.map(a => a.date))].sort().slice(-12);
+  const by = (c, d) => { const r = att.find(a => a.church === c && a.date === d); return r ? r.count : null; };
+  const totals = dates.map(d => att.filter(a => a.date === d).reduce((t, a) => t + a.count, 0));
+  const max = Math.max(1, ...totals);
+  $('#attChartTitle').textContent = (isD ? 'District total, last ' : churchName(me.church) + ', last ') + Math.max(dates.length, 0) + ' Sabbaths';
+  if (!dates.length) { $('#attChart').innerHTML = '<p class="muted">No numbers yet. Enter the first one above.</p>'; $('#attHead').innerHTML = ''; $('#attRows').innerHTML = ''; $('#attCount').textContent = ''; return; }
+  const W = Math.max(320, dates.length * 56), H = 190, bw = 30, base = H - 30;
+  $('#attChart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Attendance by Sabbath">` +
+    dates.map((d, i) => { const h = Math.round(totals[i] / max * (base - 22)), x = 14 + i * 56;
+      return `<rect x="${x}" y="${base - h}" width="${bw}" height="${h}" rx="4" fill="var(--blue)"/><text x="${x + bw / 2}" y="${base - h - 6}" font-size="12" font-weight="700" text-anchor="middle" fill="currentColor">${totals[i]}</text><text x="${x + bw / 2}" y="${H - 10}" font-size="11" text-anchor="middle" fill="currentColor" opacity=".7">${esc(shortDate(d))}</text>`; }).join('') + '</svg>';
+  const rowsFor = isD ? churches : churches.filter(c => c.code === me.church);
+  const recent = dates.slice(-6);
+  $('#attHead').innerHTML = '<tr><th>Church</th>' + recent.map(d => `<th>${esc(shortDate(d))}</th>`).join('') + '</tr>';
+  $('#attRows').innerHTML = rowsFor.map(c => `<tr style="cursor:default"><td>${esc(c.name)}</td>${recent.map(d => { const v = by(c.code, d); return `<td>${v == null ? '<span class="muted">·</span>' : v}</td>`; }).join('')}</tr>`).join('');
+  $('#attCount').textContent = isD ? 'A dot means that church has not sent a number for that Sabbath.' : '';
+}
+$('#attForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('#aErr').textContent = '';
+  try {
+    await api('saveAttendance', { church: me.role === 'district' ? $('#aChurch').value : me.church, date: $('#aDate').value, count: Number($('#aCount').value) });
+    toast('Saved'); $('#aCount').value = ''; loadAtt();
+  } catch (err) { $('#aErr').textContent = err.message; }
+});
+
 /* ---------------- demo backend (only when API_URL is blank) ---------------- */
 const demoState = (() => {
   if (!DEMO) return null;
@@ -832,6 +950,14 @@ async function demoApi(b) {
       const hits = S.mem.filter(m => key(m.lastName) === key(b.lastName) && (!key(b.firstName) || key(m.firstName).startsWith(key(b.firstName))));
       return { ok: true, results: hits.map(m => ({ memberId: m.memberId, name: m.firstName + ' ' + m.lastName, church: S.ch.find(c => c[0] === m.church)[1], status: m.status, statusDate: m.statusDate })) };
     }
+    case 'listEvents': return { ok: true, events: (S.events = S.events || []).map(n => ({ ...n })) };
+    case 'saveEvent': { S.events = S.events || []; const it = b.item || {}; if (!String(it.title || '').trim()) return fail('Please write a title.');
+      const rec = { id: it.id || 'E' + Math.random().toString(36).slice(2, 10), title: it.title.trim(), date: it.date || '', time: it.time || '', place: it.place || '', description: it.description || '', church: it.church || '' };
+      const i = S.events.findIndex(x => x.id === rec.id); if (i < 0) S.events.unshift(rec); else S.events[i] = rec; return { ok: true, item: rec }; }
+    case 'deleteEvent': S.events = (S.events || []).filter(x => x.id !== b.id); return { ok: true };
+    case 'listAttendance': return { ok: true, attendance: (S.att = S.att || []).filter(a => u.role === 'district' || a.church === u.church).map(a => ({ ...a })) };
+    case 'saveAttendance': { S.att = S.att || []; const c = u.role === 'district' ? b.church : u.church; const i = S.att.findIndex(a => a.church === c && a.date === b.date);
+      const rec = { church: c, date: b.date, count: Number(b.count) || 0 }; if (i < 0) S.att.push(rec); else S.att[i] = rec; return { ok: true }; }
     case 'listNews': return { ok: true, news: (S.news = S.news || []).map(n => ({ ...n })) };
     case 'saveNews': { S.news = S.news || []; const it = b.item || {}; if (!String(it.title || '').trim()) return fail('Please write a title.');
       const rec = { id: it.id || 'N' + Math.random().toString(36).slice(2, 10), title: it.title.trim(), body: it.body || '', date: it.date || '', church: it.church || '', pinned: it.pinned ? 'yes' : '' };
