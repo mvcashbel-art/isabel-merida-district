@@ -75,3 +75,11 @@ District officers sign in to the registry, open **Announcements**, and post a ti
 - **Attendance** (everyone who signs in to the registry): registry > **Attendance**. A clerk enters one number per Sabbath for their own church. District officers can enter for any church and see a district chart. No names are stored. Entering the same date again replaces the number.
 - **Share**: every announcement and event has a **Share** button. On a phone it opens the share sheet (Messenger, Facebook). On a computer it copies the text and link. An announcement link opens the district site at that announcement.
 - The registry script needs a new deployment each time `Code.gs` changes (Deploy > Manage deployments > Edit > New version). The `Events` and `Attendance` tabs create themselves in the registry sheet.
+
+## Reminders, officer guide, ID card sheet and poster
+
+- **Attendance reminder**: when a clerk signs in and the last Sabbath's number is missing, a yellow bar offers to open the Attendance tab. District officers see which churches that have sent numbers before have not sent the last one. No server change needed.
+- **This week**: district events within 7 days show a Today / Tomorrow / This Sabbath / This week badge on the district site and on every church Home page (run `tools/district_news_layer.py` on a church folder to update it).
+- **Officer guide**: `guide.html` (English and Bisaya, prints on one or two pages), linked from the registry header.
+- **Print ID cards**: Members tab, "Print ID cards" prints the active members in the list shown, ten to an A4 page, each with a QR code. The print is logged like an export.
+- **Sabbath poster**: Events section of the district site, "Make a Sabbath poster" draws a 1080x1350 picture from the next district event and the day's KJV verse. It needs no server.
