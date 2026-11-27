@@ -445,7 +445,7 @@ nav.links a.on{background:var(--blue-soft);color:var(--ink)}
     <div class="section-head"><h2 data-i18n="events_title"></h2><p><button class="btn ghost" type="button" id="posterBtn"></button></p></div>
     <div class="events" id="eventList"></div>
     <dialog id="posterDlg" style="max-width:min(560px,94vw);width:100%;border:1px solid var(--line);border-radius:18px;background:var(--surface);color:var(--ink);padding:16px">
-      <canvas id="posterCv" width="1080" height="1350" style="width:100%;height:auto;border-radius:12px;display:block" role="img"></canvas>
+      <canvas id="posterCv" width="1080" height="1350" style="max-width:100%;max-height:calc(100vh - 150px);width:auto;height:auto;border-radius:12px;display:block;margin:0 auto" role="img"></canvas>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="btn" type="button" id="posterDl"></button><button class="btn ghost" type="button" id="posterShare" hidden></button><button class="btn ghost" type="button" id="posterClose"></button></div>
     </dialog>
   </div></section>

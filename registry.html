@@ -123,6 +123,24 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
   #printArea,#printArea *{visibility:visible}
   #printArea{position:absolute;left:0;top:0}
 }
+
+/* printable card sheet (10 per A4 page, credit-card size) */
+#sheetArea{display:none}
+.scard{width:85.6mm;height:54mm;box-sizing:border-box;border:.3mm solid #1c6fb5;border-radius:3mm;padding:3.5mm 4mm;display:grid;grid-template-columns:1fr 24mm;gap:2mm;align-content:start;background:#fff;color:#10233f;break-inside:avoid;overflow:hidden}
+.scard .d{grid-column:1/-1;font:700 2.3mm/1.2 system-ui,sans-serif;letter-spacing:.2mm;text-transform:uppercase;color:#1c6fb5}
+.scard .nm{font:700 4.6mm/1.15 Georgia,serif;align-self:center;overflow-wrap:anywhere}
+.scard .ch{font:400 3mm/1.25 system-ui,sans-serif;margin-top:1mm}
+.scard .id{font:700 3mm/1.2 system-ui,sans-serif;font-variant-numeric:tabular-nums;margin-top:2mm}
+.scard .q{width:24mm;height:24mm;align-self:center}
+.scard .q svg{width:100%;height:100%;display:block}
+.scard .f{grid-column:1/-1;font:400 2.1mm/1.2 system-ui,sans-serif;color:#55678a;align-self:end}
+body.printsheet #sheetArea{display:grid;grid-template-columns:repeat(2,85.6mm);gap:4mm 6mm;justify-content:center;padding:8mm 0}
+@media print{
+  body.printsheet *{visibility:hidden}
+  body.printsheet #sheetArea,body.printsheet #sheetArea *{visibility:visible}
+  body.printsheet #sheetArea{position:absolute;left:0;top:0;width:100%}
+  @page{margin:8mm}
+}
 .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;z-index:50}
 </style>
 </head>
@@ -135,6 +153,7 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
   <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
     <h1 id="title">District Member Registry</h1>
     <a class="btn ghost small" href="./">&larr; District website</a>
+    <a class="btn ghost small" href="guide.html">Officer guide</a>
   </div>
   <div class="who" id="who" hidden>
     <span id="whoText"></span>
@@ -165,6 +184,7 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
   </form>
 
   <!-- app -->
+  <div id="sheetArea" aria-hidden="true"></div>
   <div id="app" hidden>
     <div class="nudge" id="attNudge" hidden role="status"><p id="attNudgeText"></p><button class="btn small" type="button" id="attNudgeBtn">Enter attendance</button></div>
     <div class="tabs" role="tablist">
@@ -184,6 +204,7 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
         <button class="btn" id="addBtn" type="button">Add member</button>
         <button class="btn" id="importBtn" type="button">Import from a church</button>
         <button class="btn ghost" id="csvBtn" type="button">Export CSV</button>
+        <button class="btn ghost" id="cardsBtn" type="button">Print ID cards</button>
       </div>
       <div class="tablebox">
         <table>
@@ -431,6 +452,23 @@ $('#rows').addEventListener('click', e => { const r = e.target.closest('tr[data-
 $('#rows').addEventListener('keydown', e => { if (e.key === 'Enter') { const r = e.target.closest('tr[data-id]'); if (r) openMember(r.dataset.id); } });
 $('#addBtn').addEventListener('click', () => openMember(null));
 $('#importBtn').addEventListener('click', openImport);
+
+
+/* printable ID card sheet: only active members in the list currently shown */
+$('#cardsBtn').addEventListener('click', async () => {
+  const list = visible().filter(m => m.status === 'active');
+  if (!list.length) { toast('No active members in this list.'); return; }
+  if (list.length > 100 && !confirm('Print ' + list.length + ' cards? That is ' + Math.ceil(list.length / 10) + ' pages.')) return;
+  try { await api('logExport', { count: list.length }); } catch (e) {}
+  $('#sheetArea').innerHTML = list.map(m => `<div class="scard"><div class="d">${esc(DISTRICT_NAME)} · Seventh-day Adventist</div>
+    <div><div class="nm">${esc(fullName(m))}</div><div class="ch">${esc(churchName(m.church))}</div><div class="id">${esc(m.memberId)}</div></div>
+    <div class="q">${qrSvg(verifyUrl(m.memberId))}</div>
+    <div class="f">Scan the code or enter the ID and last name on the district website to confirm.</div></div>`).join('');
+  document.body.classList.add('printsheet');
+  const done = () => { document.body.classList.remove('printsheet'); $('#sheetArea').innerHTML = ''; window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  try { window.print(); } catch (e) { toast('Printing is not available here.'); done(); }
+});
 
 /* CSV export */
 $('#csvBtn').addEventListener('click', async () => {
