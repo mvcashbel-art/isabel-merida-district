@@ -37,6 +37,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;padding-bottom:12px;flex-wrap:wrap}
 .top h1{font-size:1.2rem}
 .who{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.9rem;flex-wrap:wrap}
+.nudge{background:var(--gold-soft);border:1px solid var(--gold);border-radius:12px;padding:12px 16px;margin:0 0 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}.nudge p{margin:0;flex:1 1 220px}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:999px;font-weight:700;border:2px solid var(--blue);background:var(--blue);color:#fff;cursor:pointer;text-decoration:none}
 :root[data-theme="dark"] .btn:not(.ghost){color:#0d1824}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn:not(.ghost){color:#0d1824}}
@@ -165,6 +166,7 @@ dialog::backdrop{background:rgba(10,20,30,.55)}
 
   <!-- app -->
   <div id="app" hidden>
+    <div class="nudge" id="attNudge" hidden role="status"><p id="attNudgeText"></p><button class="btn small" type="button" id="attNudgeBtn">Enter attendance</button></div>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" data-tab="members" aria-selected="true">Members</button>
       <button class="tab" role="tab" data-tab="check" aria-selected="false">Check someone</button>
@@ -370,7 +372,7 @@ async function enter() {
   $('#eventsTab').hidden = me.role !== 'district';
   $('#fChurch').hidden = me.role !== 'district';
   $('#fChurch').innerHTML = '<option value="all">All churches</option>' + churches.map(c => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
-  $('#app').hidden = false; showTab('members'); await loadMembers(); resetIdle();
+  $('#app').hidden = false; showTab('members'); await loadMembers(); resetIdle(); checkAttNudge();
 }
 $('#loginForm').addEventListener('submit', async e => {
   e.preventDefault(); $('#lgErr').textContent = ''; $('#lgBtn').disabled = true;
@@ -884,11 +886,37 @@ function renderAtt() {
   $('#attRows').innerHTML = rowsFor.map(c => `<tr style="cursor:default"><td>${esc(c.name)}</td>${recent.map(d => { const v = by(c.code, d); return `<td>${v == null ? '<span class="muted">·</span>' : v}</td>`; }).join('')}</tr>`).join('');
   $('#attCount').textContent = isD ? 'A dot means that church has not sent a number for that Sabbath.' : '';
 }
+
+/* ---------------- reminder: missing Sabbath attendance ---------------- */
+async function checkAttNudge() {
+  const box = $('#attNudge'); box.hidden = true;
+  try {
+    const now = new Date(), sab = lastSabbath();
+    if (now.getDay() === 6 && now.getHours() < 12) return; // today's Sabbath has not happened yet
+    const rows = (await api('listAttendance')).attendance;
+    const sent = new Set(rows.filter(a => a.date === sab).map(a => a.church));
+    const label = new Date(sab + 'T00:00:00').toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
+    if (me.role === 'district') {
+      const ever = new Set(rows.map(a => a.church)); // only churches that have started sending numbers
+      const missing = churches.filter(c => ever.has(c.code) && !sent.has(c.code));
+      if (!missing.length) return;
+      $('#attNudgeText').textContent = missing.length + ' church' + (missing.length === 1 ? ' has' : 'es have') + ' not sent the ' + label + ' attendance: ' + missing.slice(0, 4).map(c => c.name).join(', ') + (missing.length > 4 ? ' and ' + (missing.length - 4) + ' more' : '') + '.';
+      $('#attNudgeBtn').textContent = 'See attendance';
+    } else {
+      if (sent.has(me.church)) return;
+      $('#attNudgeText').textContent = 'Please send the attendance number for the Sabbath of ' + label + '.';
+      $('#attNudgeBtn').textContent = 'Enter attendance';
+    }
+    box.hidden = false;
+  } catch (e) { /* the reminder is optional */ }
+}
+$('#attNudgeBtn').addEventListener('click', () => showTab('att'));
+
 $('#attForm').addEventListener('submit', async e => {
   e.preventDefault(); $('#aErr').textContent = '';
   try {
     await api('saveAttendance', { church: me.role === 'district' ? $('#aChurch').value : me.church, date: $('#aDate').value, count: Number($('#aCount').value) });
-    toast('Saved'); $('#aCount').value = ''; loadAtt();
+    toast('Saved'); $('#aCount').value = ''; loadAtt(); checkAttNudge();
   } catch (err) { $('#aErr').textContent = err.message; }
 });
 

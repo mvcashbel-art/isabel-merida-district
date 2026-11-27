@@ -442,8 +442,12 @@ nav.links a.on{background:var(--blue-soft);color:var(--ink)}
   </div></section>
 
   <section id="events"><div class="wrap">
-    <div class="section-head"><h2 data-i18n="events_title"></h2></div>
+    <div class="section-head"><h2 data-i18n="events_title"></h2><p><button class="btn ghost" type="button" id="posterBtn"></button></p></div>
     <div class="events" id="eventList"></div>
+    <dialog id="posterDlg" style="max-width:min(560px,94vw);width:100%;border:1px solid var(--line);border-radius:18px;background:var(--surface);color:var(--ink);padding:16px">
+      <canvas id="posterCv" width="1080" height="1350" style="width:100%;height:auto;border-radius:12px;display:block" role="img"></canvas>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="btn" type="button" id="posterDl"></button><button class="btn ghost" type="button" id="posterShare" hidden></button><button class="btn ghost" type="button" id="posterClose"></button></div>
+    </dialog>
   </div></section>
 
   <section id="gallery"><div class="wrap">
@@ -897,13 +901,20 @@ function renderChurches() {
   }).join('');
   updateMap();
 }
+function soonBadge(d) {
+  const n = Math.round((d - new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())) / 864e5);
+  if (n < 0 || n > 7) return '';
+  const w = n === 0 ? ['Today', 'Karon'] : n === 1 ? ['Tomorrow', 'Ugma'] : d.getDay() === 6 ? ['This Sabbath', 'Kini nga Igpapahulay'] : ['This week', 'Kini nga semana'];
+  return `<span style="display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--blue);color:#fff;margin-right:8px;vertical-align:2px">${esc(lang === 'ceb' ? w[1] : w[0])}</span>`;
+}
 function renderEvents() {
+  try { setPosterText(); } catch (e) {}
   const now = new Date(); const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const list = state.events.map(e => ({ ...e, _d: pd(e.date) })).filter(e => e._d && e._d >= today).sort((a, b) => a._d - b._d);
   state.evList = list;
   $('#eventList').innerHTML = list.length ? list.map((e, i) => `<article class="event">
       <div class="dateblock"><span>${esc(fmt(e._d, { month: 'short' }))}</span><b>${e._d.getDate()}</b></div>
-      <div><h3>${esc(e.title)}</h3>
+      <div><h3>${soonBadge(e._d)}${esc(e.title)}</h3>
         <div class="meta">${[e.time, e.place, e.church || T('whole')].filter(Boolean).map(x => `<span>${esc(x)}</span>`).join('<span class="sep">·</span>')}</div>
         ${e.description ? `<p>${esc(e.description)}</p>` : ''}<button class="cal" type="button" data-ev="${i}">${esc(T('cal_add'))}</button> <button class="cal" type="button" data-share="e::${i}">${esc(T('share_btn'))}</button></div></article>`).join('')
     : `<div class="empty">${esc(T('events_empty'))}</div>`;
@@ -1069,6 +1080,75 @@ $('#verseBox').addEventListener('click', async e => {
   const { v } = todaysVerse(), text = `“${v[1]}” — ${v[0]} (KJV)`;
   if (b.dataset.vact === 'share') { try { await navigator.share({ text, title: T('verse_title') }); } catch (er) {} return; }
   try { await navigator.clipboard.writeText(text); b.textContent = T('verse_copied'); setTimeout(() => { b.textContent = T('verse_copy'); }, 1800); } catch (er) {}
+});
+
+
+/* ---------- "Sabbath this week" poster ---------- */
+const POSTER_TXT = {
+  en: { btn: 'Make a Sabbath poster', head: 'SABBATH THIS WEEK', next: 'NEXT DISTRICT EVENT', none: 'Come worship with us', dl: 'Download picture', share: 'Share', close: 'Close', kjv: 'King James Version', alt: 'Sabbath poster' },
+  ceb: { btn: 'Himoa ang poster sa Igpapahulay', head: 'IGPAPAHULAY KINI NGA SEMANA', next: 'SUNOD NGA PANGHITABO SA DISTRITO', none: 'Duha kamo sa among pagsimba', dl: 'I-download ang hulagway', share: 'Ipaambit', close: 'Close', kjv: 'King James Version', alt: 'Poster sa Igpapahulay' }
+};
+const PT = k => (POSTER_TXT[lang] || POSTER_TXT.en)[k];
+function nextSabbathDate() {
+  const mn = manilaNow(), add = (6 - mn.getUTCDay() + 7) % 7;
+  return new Date(mn.getUTCFullYear(), mn.getUTCMonth(), mn.getUTCDate() + add);
+}
+function wrapLines(ctx, text, maxW) {
+  const words = String(text || '').split(/\s+/).filter(Boolean), lines = []; let cur = '';
+  words.forEach(w => { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t; });
+  if (cur) lines.push(cur); return lines;
+}
+function drawPoster(logo) {
+  const cv = $('#posterCv'), c = cv.getContext('2d'), W = 1080, H = 1350, serif = 'Georgia, "Times New Roman", serif', sans = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+  const g = c.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#1d5fd8'); g.addColorStop(1, '#0b2c6b'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  c.fillStyle = 'rgba(53,208,200,.16)'; c.beginPath(); c.arc(W - 120, 160, 330, 0, 7); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.07)'; c.beginPath(); c.arc(80, H - 260, 300, 0, 7); c.fill();
+  c.textAlign = 'center'; c.fillStyle = '#fff';
+  let y = 96;
+  if (logo) { const s = 110; c.drawImage(logo, W / 2 - s / 2, y - 20, s, s); y += 120; }
+  c.font = '600 30px ' + sans; c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(CONFIG.districtName.toUpperCase(), W / 2, y + 20); y += 90;
+  c.fillStyle = '#7fe3dd'; c.font = '800 54px ' + sans; c.fillText(PT('head'), W / 2, y); y += 40;
+  const sab = nextSabbathDate(), loc = lang === 'ceb' ? 'ceb-PH' : 'en-PH';
+  c.fillStyle = '#fff'; c.font = '700 112px ' + serif;
+  c.fillText(sab.toLocaleDateString(loc, { month: 'long', day: 'numeric' }), W / 2, y + 100); y += 150;
+  c.font = '400 38px ' + sans; c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(sab.toLocaleDateString(loc, { weekday: 'long', year: 'numeric' }), W / 2, y + 20); y += 70;
+  c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(W / 2 - 60, y, 120, 4); y += 56;
+  const ev = (state.evList || [])[0];
+  c.fillStyle = '#7fe3dd'; c.font = '700 28px ' + sans; c.fillText(PT('next'), W / 2, y); y += 56;
+  c.fillStyle = '#fff';
+  if (ev) {
+    c.font = '700 54px ' + serif; wrapLines(c, ev.title, 900).slice(0, 2).forEach(l => { c.fillText(l, W / 2, y); y += 64; });
+    c.font = '400 34px ' + sans; c.fillStyle = 'rgba(255,255,255,.92)';
+    const when = ev._d ? ev._d.toLocaleDateString(loc, { weekday: 'short', month: 'long', day: 'numeric' }) : '';
+    [when + (ev.time ? ' · ' + ev.time : ''), ev.place].filter(Boolean).forEach(l => { wrapLines(c, l, 900).slice(0, 2).forEach(x => { c.fillText(x, W / 2, y + 8); y += 46; }); });
+  } else { c.font = '700 54px ' + serif; c.fillText(PT('none'), W / 2, y); y += 64; }
+  /* verse panel, KJV only */
+  const v = todaysVerse().v, py = Math.max(y + 36, 860), ph = H - 130 - py;
+  c.fillStyle = 'rgba(255,255,255,.12)'; c.beginPath(); if (c.roundRect) c.roundRect(70, py, W - 140, ph, 28); else c.rect(70, py, W - 140, ph); c.fill();
+  let fs = 40, lines; do { c.font = 'italic 400 ' + fs + 'px ' + serif; lines = wrapLines(c, '“' + v[1] + '”', W - 240); fs -= 2; } while (lines.length * (fs + 20) > ph - 120 && fs > 24);
+  const lh = fs + 18, th = lines.length * lh + 60; let vy = py + (ph - th) / 2 + fs;
+  c.fillStyle = '#fff'; lines.forEach(l => { c.fillText(l, W / 2, vy); vy += lh; });
+  c.font = '700 30px ' + sans; c.fillStyle = '#7fe3dd'; c.fillText(v[0] + ' · ' + PT('kjv'), W / 2, vy + 18);
+  c.font = '500 26px ' + sans; c.fillStyle = 'rgba(255,255,255,.8)'; c.fillText(location.host + location.pathname.replace(/index\.html$/, ''), W / 2, H - 60);
+  cv.setAttribute('aria-label', PT('alt'));
+}
+function posterBlob() { return new Promise(r => $('#posterCv').toBlob(r, 'image/png')); }
+function setPosterText() { $('#posterBtn').textContent = PT('btn'); $('#posterDl').textContent = PT('dl'); $('#posterShare').textContent = PT('share'); $('#posterClose').textContent = PT('close'); }
+$('#posterBtn').addEventListener('click', () => {
+  setPosterText();
+  const img = new Image(); img.onload = () => { drawPoster(img); }; img.onerror = () => drawPoster(null); img.src = 'logo.png';
+  drawPoster(null);
+  $('#posterShare').hidden = !(navigator.canShare && navigator.share);
+  $('#posterDlg').showModal();
+});
+$('#posterClose').addEventListener('click', () => $('#posterDlg').close());
+$('#posterDl').addEventListener('click', async () => {
+  const b = await posterBlob(); if (!b) return;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'sabbath-this-week.png'; document.body.appendChild(a); a.click(); a.remove();
+});
+$('#posterShare').addEventListener('click', async () => {
+  const b = await posterBlob(); if (!b) return; const f = new File([b], 'sabbath-this-week.png', { type: 'image/png' });
+  try { if (navigator.canShare({ files: [f] })) await navigator.share({ files: [f], title: PT('head') }); } catch (er) {}
 });
 
 /* ---------- map ---------- */
