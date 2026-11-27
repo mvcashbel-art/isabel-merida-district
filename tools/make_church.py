@@ -109,6 +109,9 @@ subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.absp
 # floating back-to-top button
 subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'totop_layer.py'), dest])
 
+# phone half-circle menu
+subprocess.check_call([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fanmenu_layer.py'), dest])
+
 # leftovers check
 left = []
 for n in os.listdir(dest):
