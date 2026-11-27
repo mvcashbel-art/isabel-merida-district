@@ -114,7 +114,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .av.sm{width:30px;height:30px;font-size:.75rem}
 .av.md{width:42px;height:42px;font-size:.9rem}
 .av.lg{width:64px;height:64px;font-size:1.2rem}
-.av.xl{width:104px;height:104px;font-size:2rem;border:4px solid #fff}
+.av.xl{width:180px;height:180px;font-size:3.4rem;border:6px solid #fff}
 .av.sys{background:#fff;border:1px solid var(--line)}
 .av.sys img{width:74%;height:74%;object-fit:contain}
 .av.sys .ic{width:55%;height:55%}
@@ -248,11 +248,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .mem b{display:block}
 .mem span.s{display:block;font-size:.85rem;color:var(--muted)}
 .pf{padding:0;overflow:hidden}
-.cover{height:170px;background:linear-gradient(120deg,#BFDDEB,#E7EFD9 60%,#F4E7BE);position:relative}
+.cover{height:auto;aspect-ratio:5/2;min-height:200px;max-height:440px;background:linear-gradient(120deg,#BFDDEB,#E7EFD9 60%,#F4E7BE);position:relative}
 .cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .pf-av{position:absolute;left:18px;bottom:0;transform:translateY(50%);z-index:2}
 .pf-main{position:relative;padding:14px 18px 4px}
-.pf-id{padding:0 0 4px 132px;min-height:48px}
+.pf-id{padding:0 0 4px 216px;min-height:96px}
 .pf-id h1{font-size:2rem}
 .role{color:var(--accent-dark);font-weight:600}
 .pf-body{padding:14px 18px 18px;display:flex;flex-direction:column;gap:12px}
@@ -488,9 +488,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 }
 @media (max-width:480px){
   .page-head h1{font-size:1.6rem}
-  .cover{height:120px}
+  .cover{height:auto;min-height:0;aspect-ratio:2/1}
   .pf-id h1{font-size:1.6rem}
-  .av.xl{width:88px;height:88px}
+  .av.xl{width:136px;height:136px;font-size:2.6rem}
+  .pf-id{padding-left:164px;min-height:72px}
 }
 /* phone-only tidy & compact pass: smaller padding, headings and gaps so the home stack is less congested. Desktop is unchanged. */
 @media (max-width:600px){
@@ -898,8 +899,8 @@ const stPill = p => stOf(p) === 'active' ? '' : `<span class="st-pill st-${stOf(
 const nameOf = id => id === 'system' ? (S.settings.churchName || 'Apale SDA Church') : (S.profiles[id] && S.profiles[id].name) || 'Church member';
 function av(id, size = 'md'){
   if (id === 'system') return `<span class="av ${size} sys">${LOGO}</span>`;
-  const p = S.profiles[id], u = p && p.avatar ? imgUrl(p.avatar, 200) : '';
-  if (u) return `<img class="av ${size}" src="${u}" alt="" loading="lazy">`;
+  const p = S.profiles[id], u = p && p.avatar ? imgUrl(p.avatar, size === 'xl' ? 500 : 200) : '';
+  if (u) return size === 'xl' ? `<img class="av ${size}" src="${u}" alt="Profile photo" data-act="zoom" style="cursor:zoom-in">` : `<img class="av ${size}" src="${u}" alt="" loading="lazy">`;
   const h = hue(id);
   return `<span class="av ${size}" style="background:hsl(${h} 42% 88%);color:hsl(${h} 45% 26%)">${esc(initials(nameOf(id)))}</span>`;
 }
